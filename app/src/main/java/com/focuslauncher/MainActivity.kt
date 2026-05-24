@@ -18,6 +18,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import com.focuslauncher.core.common.theme.FocusLauncherTheme
 import com.focuslauncher.feature.launcher.LauncherViewModel
@@ -104,25 +106,21 @@ class MainActivity : ComponentActivity() {
                             slideInHorizontally(
                                 initialOffsetX = { it },
                                 animationSpec = tween(300)
-                            ) + fadeIn(animationSpec = tween(300))
+                            )
                         },
                         exitTransition = {
-                            slideOutHorizontally(
-                                targetOffsetX = { -it },
-                                animationSpec = tween(300)
-                            ) + fadeOut(animationSpec = tween(300))
+                            // Stay in place — the entering screen slides over this one
+                            ExitTransition.None
                         },
                         popEnterTransition = {
-                            slideInHorizontally(
-                                initialOffsetX = { -it },
-                                animationSpec = tween(300)
-                            ) + fadeIn(animationSpec = tween(300))
+                            // Stay in place — the popping screen slides away to reveal this one
+                            EnterTransition.None
                         },
                         popExitTransition = {
                             slideOutHorizontally(
                                 targetOffsetX = { it },
                                 animationSpec = tween(300)
-                            ) + fadeOut(animationSpec = tween(300))
+                            )
                         }
                     ) {
                         composable(
@@ -199,7 +197,14 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onRequestSetDefaultLauncher = {
                                     lifecycleScope.launch {
-                                        delay(600) // Wait for HomeActivityAlias to be enabled by FocusApplication
+                                        val pm = packageManager
+                                        val aliasComponent = android.content.ComponentName(this@MainActivity, "com.focuslauncher.HomeActivityAlias")
+                                        pm.setComponentEnabledSetting(
+                                            aliasComponent,
+                                            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                                            PackageManager.DONT_KILL_APP
+                                        )
+                                        delay(600) // Wait for HomeActivityAlias to be registered by the OS
                                         if (!isDefaultLauncher()) {
                                             promptDefaultLauncher()
                                         }
