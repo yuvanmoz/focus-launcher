@@ -51,6 +51,7 @@ fun ProfileEditScreen(
     onNavigateToAppSelector: () -> Unit,
     onBack: () -> Unit,
     onRequestSetDefaultLauncher: () -> Unit = {},
+    onRequestTurnOff: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val draftProfile by viewModel.editProfile.collectAsState()
@@ -98,7 +99,7 @@ fun ProfileEditScreen(
                         Icon(
                             imageVector = Icons.Default.KeyboardArrowLeft,
                             contentDescription = "Back",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 },
@@ -107,16 +108,16 @@ fun ProfileEditScreen(
                         Icon(
                             imageVector = Icons.Default.MoreVert,
                             contentDescription = "More options",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         },
-        containerColor = Color.Black, // Dark/black background matching image
+        containerColor = MaterialTheme.colorScheme.background, // Adapts to light/dark themes
         modifier = modifier
     ) { padding ->
         Column(
@@ -140,7 +141,7 @@ fun ProfileEditScreen(
                         .fillMaxWidth()
                         .padding(top = 42.dp) // half of icon size (84.dp / 2 = 42.dp)
                         .clip(RoundedCornerShape(28.dp))
-                        .background(Color(0xFF1C1C1E)) // Dark grey background matching image
+                        .background(MaterialTheme.colorScheme.surface) // Adapts to theme (surface)
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -149,7 +150,7 @@ fun ProfileEditScreen(
                     Text(
                         text = profileName.ifEmpty { "New Mode" },
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface, // Adapts to theme
                         fontSize = 24.sp,
                         textAlign = TextAlign.Center
                     )
@@ -161,14 +162,15 @@ fun ProfileEditScreen(
                         onClick = {
                             if (isCurrentlyActive) {
                                 viewModel.selectProfile(-99L) // Switch back to No Mode
+                                onRequestTurnOff() // Return to system launcher & close Focus activity
                             } else {
                                 viewModel.selectProfile(profile.id) // Turn on this mode
                                 onRequestSetDefaultLauncher() // Prompt user to set Focus Launcher as default
                             }
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isCurrentlyActive) Color.White else Color(0xFF4C80F1), // Bright blue pill button matching image
-                            contentColor = if (isCurrentlyActive) Color.Black else Color.White
+                            containerColor = if (isCurrentlyActive) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary, // Premium theme colors
+                            contentColor = if (isCurrentlyActive) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onPrimary
                         ),
                         shape = CircleShape,
                         contentPadding = PaddingValues(horizontal = 32.dp, vertical = 12.dp),
@@ -186,7 +188,7 @@ fun ProfileEditScreen(
                 Box(
                     modifier = Modifier
                         .size(84.dp)
-                        .background(Color(0xFF2C2C2E), CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape) // Adapts to theme (surfaceVariant)
                         .align(Alignment.TopCenter),
                     contentAlignment = Alignment.Center
                 ) {
@@ -222,8 +224,8 @@ fun ProfileEditScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = accentColor,
                     unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                 )
             )
 
@@ -255,7 +257,7 @@ fun ProfileEditScreen(
                         Text(
                             text = "Select Focus Apps",
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.bodyLarge
                         )
                         Spacer(modifier = Modifier.height(2.dp))

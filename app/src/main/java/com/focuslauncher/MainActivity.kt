@@ -215,6 +215,9 @@ class MainActivity : ComponentActivity() {
                                             promptDefaultLauncher()
                                         }
                                     }
+                                },
+                                onRequestTurnOff = {
+                                    finishAndRemoveTask()
                                 }
                             )
                         }
