@@ -48,13 +48,19 @@ class FocusNotificationListenerService : NotificationListenerService() {
         }
 
         // Periodic check to verify Focus Launcher is still default. If not, reset profile to flush notifications.
+        // We bypass this check during a 30 seconds grace period to allow the user to select Focus Launcher as default.
         serviceScope.launch {
             while (isActive) {
                 try {
                     val app = applicationContext as FocusApplication
                     val profileRepo = app.profileRepository
                     val currentProfileId = profileRepo.getActiveProfileId()
-                    if (currentProfileId != -99L && !isFocusLauncherDefault(applicationContext)) {
+                    
+                    val sharedPrefs = getSharedPreferences("focus_launcher_prefs", Context.MODE_PRIVATE)
+                    val lastChange = sharedPrefs.getLong("last_profile_change_time", 0)
+                    val isGracePeriod = (System.currentTimeMillis() - lastChange) < 30000
+                    
+                    if (currentProfileId != -99L && !isFocusLauncherDefault(applicationContext) && !isGracePeriod) {
                         profileRepo.setActiveProfile(-99L)
                     }
                 } catch (e: Exception) {}

@@ -56,6 +56,10 @@ interface ProfileRepository {
     val isFirstInstallFlow: Flow<Boolean>
     fun isFirstInstall(): Boolean
     suspend fun setFirstInstallComplete()
+    
+    val doubleTapToLockFlow: Flow<Boolean>
+    fun isDoubleTapToLockEnabled(): Boolean
+    suspend fun setDoubleTapToLockEnabled(enabled: Boolean)
 }
 
 class ProfileRepositoryImpl(
@@ -81,6 +85,9 @@ class ProfileRepositoryImpl(
     private val _isFirstInstall = MutableStateFlow(sharedPrefs.getBoolean("is_first_install", true))
     override val isFirstInstallFlow: Flow<Boolean> = _isFirstInstall.asStateFlow()
 
+    private val _doubleTapToLock = MutableStateFlow(sharedPrefs.getBoolean("double_tap_to_lock", false))
+    override val doubleTapToLockFlow: Flow<Boolean> = _doubleTapToLock.asStateFlow()
+
     override fun isFirstInstall(): Boolean {
         return _isFirstInstall.value
     }
@@ -97,6 +104,15 @@ class ProfileRepositoryImpl(
     override suspend fun setFirstInstallComplete() {
         sharedPrefs.edit().putBoolean("is_first_install", false).apply()
         _isFirstInstall.value = false
+    }
+
+    override fun isDoubleTapToLockEnabled(): Boolean {
+        return _doubleTapToLock.value
+    }
+
+    override suspend fun setDoubleTapToLockEnabled(enabled: Boolean) {
+        sharedPrefs.edit().putBoolean("double_tap_to_lock", enabled).apply()
+        _doubleTapToLock.value = enabled
     }
 
     override fun setBlockedApp(blockedApp: BlockedAppInfo?) {
@@ -141,7 +157,10 @@ class ProfileRepositoryImpl(
     }
 
     override suspend fun setActiveProfile(profileId: Long) {
-        sharedPrefs.edit().putLong("active_profile_id", profileId).apply()
+        sharedPrefs.edit()
+            .putLong("active_profile_id", profileId)
+            .putLong("last_profile_change_time", System.currentTimeMillis())
+            .apply()
         _activeProfileId.value = profileId
         
         // Trigger wallpaper updates in background

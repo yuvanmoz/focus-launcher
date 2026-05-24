@@ -4,10 +4,19 @@ import android.app.WallpaperManager
 import android.graphics.BitmapFactory
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -84,6 +93,7 @@ import androidx.compose.material3.TextButton
 fun HomeScreen(
     viewModel: LauncherViewModel,
     onNavigateToSettings: () -> Unit,
+    onLockScreen: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -92,6 +102,7 @@ fun HomeScreen(
     val blockedApp by viewModel.blockedApp.collectAsState()
     val activeProfileId by viewModel.activeProfileId.collectAsState()
     val dockApps by viewModel.dockApps.collectAsState()
+    val doubleTapToLockEnabled by viewModel.doubleTapToLock.collectAsState()
     
     var showUsagePrompt by remember { mutableStateOf(false) }
     var showNotificationPrompt by remember { mutableStateOf(false) }
@@ -126,6 +137,35 @@ fun HomeScreen(
         label = "DragScaleAnimation"
     )
 
+    val infiniteTransition = rememberInfiniteTransition(label = "Wiggle")
+    val wiggleRotation by infiniteTransition.animateFloat(
+        initialValue = -1.5f,
+        targetValue = 1.5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(120, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "WiggleRotation"
+    )
+    val wiggleOffset by infiniteTransition.animateFloat(
+        initialValue = -0.5f,
+        targetValue = 0.5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(100, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "WiggleOffset"
+    )
+    val targetScale by infiniteTransition.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "TargetScale"
+    )
+
         Box(
             modifier = modifier
                 .fillMaxSize()
@@ -154,10 +194,24 @@ fun HomeScreen(
                     val cellWidthPx = with(density) { cellWidth.toPx() }
                     val cellHeightPx = with(density) { cellHeight.toPx() }
 
-                    // Workspace canvas area to detect long press & drag gestures
+                    // Workspace canvas area to detect double tap to lock & long press/drag gestures
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
+                            .pointerInput(doubleTapToLockEnabled, homeApps) {
+                                detectTapGestures(
+                                    onDoubleTap = { offset ->
+                                        if (doubleTapToLockEnabled) {
+                                            val cellX = (offset.x / cellWidthPx).toInt().coerceIn(0, cols - 1)
+                                            val cellY = (offset.y / cellHeightPx).toInt().coerceIn(0, rows - 1)
+                                            val app = homeApps.find { it.item.cellX == cellX && it.item.cellY == cellY }
+                                            if (app == null) {
+                                                onLockScreen()
+                                            }
+                                        }
+                                    }
+                                )
+                            }
                             .pointerInput(homeApps) {
                                 detectDragGesturesAfterLongPress(
                                     onDragStart = { offset ->
@@ -229,25 +283,25 @@ fun HomeScreen(
                             Box(
                                 modifier = Modifier
                                     .offset(x = cellWidth * hoverX, y = cellHeight * hoverY)
-                                    .size(width = cellWidth, height = cellHeight),
+                                    .size(width = cellWidth, height = cellHeight)
+                                    .padding(6.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(68.dp)
+                                        .fillMaxSize()
+                                        .graphicsLayer {
+                                            scaleX = targetScale
+                                            scaleY = targetScale
+                                        }
                                         .background(
-                                            brush = Brush.radialGradient(
-                                                colors = listOf(
-                                                    Color.White.copy(alpha = 0.25f),
-                                                    Color.White.copy(alpha = 0.0f)
-                                                )
-                                            ),
-                                            shape = CircleShape
+                                            color = Color.White.copy(alpha = 0.15f),
+                                            shape = RoundedCornerShape(16.dp)
                                         )
                                         .border(
-                                            width = 1.5.dp,
-                                            color = Color.White.copy(alpha = 0.6f),
-                                            shape = CircleShape
+                                            width = 2.dp,
+                                            color = Color.White.copy(alpha = 0.4f),
+                                            shape = RoundedCornerShape(16.dp)
                                         )
                                 )
                             }
@@ -300,6 +354,10 @@ fun HomeScreen(
                                         .size(width = cellWidth, height = cellHeight)
                                         .graphicsLayer {
                                             alpha = if (isThisDragging) 0.0f else 1.0f
+                                            if (draggingApp != null && !isThisDragging) {
+                                                rotationZ = wiggleRotation
+                                                translationY = wiggleOffset.dp.toPx()
+                                            }
                                         },
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -330,7 +388,8 @@ fun HomeScreen(
                                     .graphicsLayer {
                                         scaleX = dragScale
                                         scaleY = dragScale
-                                        shadowElevation = (12.dp * dragScale).toPx()
+                                        rotationZ = 6f // Premium organic tilt
+                                        shadowElevation = (16.dp * dragScale).toPx()
                                         clip = false
                                     },
                                 contentAlignment = Alignment.Center
@@ -541,6 +600,23 @@ fun HomeScreen(
 @Composable
 fun WallpaperBackground(profile: FocusProfile?, isDimmed: Boolean) {
     val path = profile?.wallpaperPath
+    
+    val blurRadius by animateDpAsState(
+        targetValue = if (isDimmed) 16.dp else 0.dp,
+        animationSpec = tween(300),
+        label = "WallpaperBlur"
+    )
+    val scale by animateFloatAsState(
+        targetValue = if (isDimmed) 1.05f else 1.0f,
+        animationSpec = tween(300),
+        label = "WallpaperScale"
+    )
+    val dimAlpha by animateFloatAsState(
+        targetValue = if (isDimmed) 0.4f else 0f,
+        animationSpec = tween(300),
+        label = "WallpaperDim"
+    )
+
     Box(modifier = Modifier.fillMaxSize()) {
         if (path != null) {
             val file = File(path)
@@ -552,18 +628,19 @@ fun WallpaperBackground(profile: FocusProfile?, isDimmed: Boolean) {
                     Image(
                         bitmap = bitmap.asImageBitmap(),
                         contentDescription = "Wallpaper",
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer(
+                                scaleX = scale,
+                                scaleY = scale
+                            )
+                            .blur(blurRadius),
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop
                     )
                 }
             }
         }
         
-        // Dimming overlay when dragging an app
-        val dimAlpha by androidx.compose.animation.core.animateFloatAsState(
-            targetValue = if (isDimmed) 0.35f else 0f,
-            label = "WallpaperDim"
-        )
         if (dimAlpha > 0f) {
             Box(
                 modifier = Modifier
@@ -610,6 +687,7 @@ fun AppIconItem(
 
     Column(
         modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .padding(vertical = 4.dp, horizontal = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

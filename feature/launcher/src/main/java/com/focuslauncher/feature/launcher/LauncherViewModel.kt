@@ -48,6 +48,9 @@ class LauncherViewModel(
     val globalTheme: StateFlow<String> = profileRepository.globalThemeFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, "SYSTEM")
 
+    val doubleTapToLock: StateFlow<Boolean> = profileRepository.doubleTapToLockFlow
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     // Current active focus profile details
     val activeProfile: StateFlow<FocusProfile?> = activeProfileId.flatMapLatest { id ->
         if (id == -1L || id == -99L) flowOf(null) else profileRepository.getProfileByIdFlow(id)

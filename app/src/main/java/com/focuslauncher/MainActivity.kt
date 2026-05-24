@@ -83,9 +83,24 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel = ViewModelProvider(this, settingsViewModelFactory)[SettingsViewModel::class.java]
 
             val globalTheme by settingsViewModel.globalTheme.collectAsState()
+            val activeProfileId by settingsViewModel.activeProfileId.collectAsState()
             
             val startDestination = remember {
-                if (settingsViewModel.isFirstInstall()) "onboarding" else "launcher"
+                if (settingsViewModel.isFirstInstall()) {
+                    "onboarding"
+                } else if (settingsViewModel.activeProfileId.value == -99L) {
+                    "settings"
+                } else {
+                    "launcher"
+                }
+            }
+
+            androidx.compose.runtime.LaunchedEffect(activeProfileId) {
+                if (activeProfileId != -99L && navController.currentDestination?.route != "launcher") {
+                    navController.navigate("launcher") {
+                        popUpTo("launcher") { inclusive = true }
+                    }
+                }
             }
             
             val darkTheme = when (globalTheme) {
@@ -143,14 +158,17 @@ class MainActivity : ComponentActivity() {
                         composable(
                             route = "launcher",
                             enterTransition = { fadeIn(animationSpec = tween(300)) },
-                            exitTransition = { fadeOut(animationSpec = tween(300)) },
-                            popEnterTransition = { fadeIn(animationSpec = tween(300)) },
-                            popExitTransition = { fadeOut(animationSpec = tween(300)) }
+                            exitTransition = { ExitTransition.None },
+                            popEnterTransition = { EnterTransition.None },
+                            popExitTransition = { ExitTransition.None }
                         ) {
                             HomeScreen(
                                 viewModel = launcherViewModel,
                                 onNavigateToSettings = {
                                     navController.navigate("settings")
+                                },
+                                onLockScreen = {
+                                    lockScreen()
                                 }
                             )
                         }
@@ -272,6 +290,21 @@ class MainActivity : ComponentActivity() {
                 startActivity(intent)
             } catch (ex: Exception) {
             }
+        }
+    }
+
+    private fun lockScreen() {
+        val dpm = getSystemService(android.content.Context.DEVICE_POLICY_SERVICE) as android.app.admin.DevicePolicyManager
+        val adminComponent = android.content.ComponentName(this, FocusDeviceAdminReceiver::class.java)
+        if (dpm.isAdminActive(adminComponent)) {
+            dpm.lockNow()
+        } else {
+            // Prompt the user to enable Device Admin
+            val intent = Intent(android.app.admin.DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
+                putExtra(android.app.admin.DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
+                putExtra(android.app.admin.DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Focus Launcher needs admin permission to lock the screen when you double-tap.")
+            }
+            startActivity(intent)
         }
     }
 }

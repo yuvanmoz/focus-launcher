@@ -152,8 +152,13 @@ class FocusBlockerService : Service() {
             return
         }
 
-        // If Focus Launcher is no longer the default launcher, reset profile to No Mode and stop service
-        if (!isFocusLauncherDefault(this)) {
+        // If Focus Launcher is no longer the default launcher, reset profile to No Mode and stop service.
+        // We bypass this check during a 30 seconds grace period to allow the user to select Focus Launcher as default.
+        val sharedPrefs = getSharedPreferences("focus_launcher_prefs", Context.MODE_PRIVATE)
+        val lastChange = sharedPrefs.getLong("last_profile_change_time", 0)
+        val isGracePeriod = (System.currentTimeMillis() - lastChange) < 30000
+
+        if (!isFocusLauncherDefault(this) && !isGracePeriod) {
             profileRepo.setActiveProfile(-99L)
             withContext(Dispatchers.Main) {
                 stopSelf()
