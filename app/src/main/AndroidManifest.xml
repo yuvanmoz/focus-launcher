@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Permission to query all installed applications on API 30+ -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    
+    <!-- Permission to change system wallpaper dynamically -->
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
+
+    <!-- Permission to monitor foreground app usage details -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
+
+    <!-- Permission to post notifications on Android 13+ (when releasing queue) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:name=".FocusApplication"
+        android:allowBackup="true"
+        android:icon="@android:drawable/sym_def_app_icon"
+        android:label="Focus Launcher"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.FocusLauncher">
+        
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleInstance"
+            android:stateNotNeeded="true"
+            android:theme="@style/Theme.FocusLauncher"
+            android:windowSoftInputMode="adjustPan">
+            
+            <!-- Standard LAUNCHER categories to allow opening app from other launchers during testing -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Core HOME alias to dynamically enable/disable Focus Launcher from system registry -->
+        <activity-alias
+            android:name="com.focuslauncher.HomeActivityAlias"
+            android:targetActivity="com.focuslauncher.MainActivity"
+            android:enabled="true"
+            android:label="Focus Launcher"
+            android:icon="@android:drawable/sym_def_app_icon"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- Background App Blocker Service -->
+        <service
+            android:name=".FocusBlockerService"
+            android:exported="false" />
+
+        <!-- Notification interceptor and queue manager service -->
+        <service
+            android:name=".FocusNotificationListenerService"
+            android:label="Focus Notification Listener"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+    </application>
+
+</manifest>

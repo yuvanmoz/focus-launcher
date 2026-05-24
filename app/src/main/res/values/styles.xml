@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Custom theme that shows the system wallpaper behind the activity window -->
+    <style name="Theme.FocusLauncher" parent="@android:style/Theme.DeviceDefault.NoActionBar">
+        <!-- Show system wallpaper -->
+        <item name="android:windowShowWallpaper">true</item>
+        <!-- Make background transparent -->
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <!-- Prevent cache artifacts -->
+        <item name="android:colorBackgroundCacheHint">@null</item>
+        <!-- Make window translucent -->
+        <item name="android:windowIsTranslucent">true</item>
+        <!-- Make status and navigation bars transparent so wallpaper draws edge-to-edge -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <!-- Turn off default Android gradients and shadows (scrims/contrast enforcement) -->
+        <item name="android:enforceStatusBarContrast" tools:targetApi="29">false</item>
+        <item name="android:enforceNavigationBarContrast" tools:targetApi="29">false</item>
+    </style>
+</resources>
