@@ -50,6 +50,7 @@ fun ProfileEditScreen(
     viewModel: SettingsViewModel,
     onNavigateToAppSelector: () -> Unit,
     onBack: () -> Unit,
+    onRequestSetDefaultLauncher: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val draftProfile by viewModel.editProfile.collectAsState()
@@ -162,6 +163,7 @@ fun ProfileEditScreen(
                                 viewModel.selectProfile(-99L) // Switch back to No Mode
                             } else {
                                 viewModel.selectProfile(profile.id) // Turn on this mode
+                                onRequestSetDefaultLauncher() // Prompt user to set Focus Launcher as default
                             }
                         },
                         colors = ButtonDefaults.buttonColors(

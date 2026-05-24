@@ -31,14 +31,15 @@ import com.focuslauncher.feature.settings.ui.ProfileEditScreen
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.LaunchedEffect
 import android.app.role.RoleManager
 import android.content.pm.PackageManager
 import android.provider.Settings
 import androidx.activity.enableEdgeToEdge
 import android.os.Build
 import android.content.Intent
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -80,16 +81,6 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel = ViewModelProvider(this, settingsViewModelFactory)[SettingsViewModel::class.java]
 
             val globalTheme by settingsViewModel.globalTheme.collectAsState()
-            val activeProfileId by settingsViewModel.activeProfileId.collectAsState()
-
-            LaunchedEffect(activeProfileId) {
-                if (activeProfileId != -99L) {
-                    delay(500) // Allow system resolver registry to cache alias state
-                    if (!isDefaultLauncher()) {
-                        promptDefaultLauncher()
-                    }
-                }
-            }
             
             val startDestination = remember {
                 if (settingsViewModel.isFirstInstall()) "onboarding" else "launcher"
@@ -205,6 +196,14 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onBack = {
                                     navController.popBackStack()
+                                },
+                                onRequestSetDefaultLauncher = {
+                                    lifecycleScope.launch {
+                                        delay(600) // Wait for HomeActivityAlias to be enabled by FocusApplication
+                                        if (!isDefaultLauncher()) {
+                                            promptDefaultLauncher()
+                                        }
+                                    }
                                 }
                             )
                         }
@@ -233,6 +232,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun promptDefaultLauncher() {
+        // Try RoleManager first (shows a nice popup on stock Android Q+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val roleManager = getSystemService(RoleManager::class.java)
             if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_HOME)) {
@@ -242,24 +242,19 @@ class MainActivity : ComponentActivity() {
                         startActivityForResult(intent, 1001)
                         return
                     } catch (e: Exception) {
-                        // Fallback below
+                        // Fall through to system settings
                     }
-                } else {
-                    return
                 }
             }
         }
         
-        // Fallback
+        // Fallback: Open system home settings directly (most reliable on Samsung One UI)
         try {
-            val intent = Intent(Intent.ACTION_MAIN).apply {
-                addCategory(Intent.CATEGORY_HOME)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
+            val intent = Intent(Settings.ACTION_HOME_SETTINGS)
             startActivity(intent)
         } catch (e: Exception) {
             try {
-                val intent = Intent(Settings.ACTION_HOME_SETTINGS)
+                val intent = Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
                 startActivity(intent)
             } catch (ex: Exception) {
             }
