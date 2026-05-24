@@ -91,52 +91,6 @@ class FocusApplication : Application() {
             // 2. Start the blocker service
             startService(Intent(this, FocusBlockerService::class.java))
             
-            // 3. Delay and prompt default launcher chooser natively
-            applicationScope.launch(Dispatchers.Main) {
-                delay(500) // Allow system resolver registry to cache alias state
-                
-                if (!isDefaultLauncher()) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        val roleManager = getSystemService(ROLE_SERVICE) as? RoleManager
-                        if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_HOME)) {
-                            if (!roleManager.isRoleHeld(RoleManager.ROLE_HOME)) {
-                                try {
-                                    val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME).apply {
-                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                    }
-                                    startActivity(intent)
-                                    return@launch
-                                } catch (e: Exception) {}
-                            }
-                        }
-                    }
-                    
-                    // Fallback
-                    try {
-                        val homeIntent = Intent(Intent.ACTION_MAIN).apply {
-                            addCategory(Intent.CATEGORY_HOME)
-                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        }
-                        startActivity(homeIntent)
-                    } catch (e: Exception) {
-                        try {
-                            val intent = Intent(Settings.ACTION_HOME_SETTINGS).apply {
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            }
-                            startActivity(intent)
-                        } catch (ex: Exception) {}
-                    }
-                }
-            }
         }
-    }
-
-    private fun isDefaultLauncher(): Boolean {
-        val intent = Intent(Intent.ACTION_MAIN).apply {
-            addCategory(Intent.CATEGORY_HOME)
-        }
-        val resolveInfo = packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
-        val currentDefaultPackage = resolveInfo?.activityInfo?.packageName
-        return currentDefaultPackage == packageName
     }
 }

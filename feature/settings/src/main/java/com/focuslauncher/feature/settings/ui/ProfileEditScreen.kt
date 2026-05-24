@@ -17,8 +17,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.Business
+import androidx.compose.material.icons.outlined.TrendingUp
+import androidx.compose.material.icons.outlined.School
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -84,27 +91,31 @@ fun ProfileEditScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        text = if (profile.id == 0L) "New Profile" else "Edit Profile",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                },
+                title = {}, // Clean top bar without text title
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
+                            imageVector = Icons.Default.KeyboardArrowLeft,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {}) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "More options",
+                            tint = Color.White
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = Color.Black
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color.Black, // Dark/black background matching image
         modifier = modifier
     ) { padding ->
         Column(
@@ -114,30 +125,37 @@ fun ProfileEditScreen(
                 .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Profile Toggle Activation (Turn On / Turn Off)
-            val isCurrentlyActive = activeProfileId == profile.id
-
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Recreated Top Look card with overlapping circular icon badge
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(accentColor.copy(alpha = 0.08f))
-                    .padding(20.dp)
+                    .padding(top = 16.dp)
             ) {
+                // 1. Card Container (Offset downwards to make space for the overlapping icon)
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 42.dp) // half of icon size (84.dp / 2 = 42.dp)
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(Color(0xFF1C1C1E)) // Dark grey background matching image
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Spacer(modifier = Modifier.height(48.dp)) // Spacer to push text below the overlapping icon
+                    
                     Text(
-                        text = if (isCurrentlyActive) "${profile.name} Mode is ON" else "${profile.name} Mode is OFF",
+                        text = profileName.ifEmpty { "New Mode" },
                         fontWeight = FontWeight.Bold,
-                        color = accentColor,
-                        fontSize = 18.sp
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        textAlign = TextAlign.Center
                     )
                     
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    val isCurrentlyActive = activeProfileId == profile.id
                     Button(
                         onClick = {
                             if (isCurrentlyActive) {
@@ -147,26 +165,41 @@ fun ProfileEditScreen(
                             }
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isCurrentlyActive) Color.White else accentColor,
+                            containerColor = if (isCurrentlyActive) Color.White else Color(0xFF4C80F1), // Bright blue pill button matching image
                             contentColor = if (isCurrentlyActive) Color.Black else Color.White
                         ),
-                        shape = RoundedCornerShape(20.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(46.dp)
+                        shape = CircleShape,
+                        contentPadding = PaddingValues(horizontal = 32.dp, vertical = 12.dp),
+                        modifier = Modifier.height(46.dp)
                     ) {
                         Text(
                             text = if (isCurrentlyActive) "Turn off" else "Turn on",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
+                            fontSize = 15.sp
                         )
                     }
                 }
+
+                // 2. Overlapping Circular Icon Badge
+                Box(
+                    modifier = Modifier
+                        .size(84.dp)
+                        .background(Color(0xFF2C2C2E), CircleShape)
+                        .align(Alignment.TopCenter),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = getProfileIcon(profile.name),
+                        contentDescription = null,
+                        tint = accentColor,
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
-            // Name Input
+            // Name Input Section
             Text(
                 text = "Profile Name",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -186,13 +219,15 @@ fun ProfileEditScreen(
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = accentColor,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
                 )
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Allowed Apps CTA Card
+            // Allowed Apps Section
             Text(
                 text = "Allowed Apps",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -218,6 +253,7 @@ fun ProfileEditScreen(
                         Text(
                             text = "Select Focus Apps",
                             fontWeight = FontWeight.Bold,
+                            color = Color.White,
                             style = MaterialTheme.typography.bodyLarge
                         )
                         Spacer(modifier = Modifier.height(2.dp))
@@ -232,107 +268,6 @@ fun ProfileEditScreen(
                         contentDescription = "Edit Apps",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Grid Configurations (Rows/Columns Selector)
-            Text(
-                text = "Grid Configuration",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(horizontal = 4.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f))
-                    .padding(18.dp)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "Grid Rows",
-                            fontWeight = FontWeight.SemiBold,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            IconButton(
-                                onClick = {
-                                    val newVal = (profile.gridRows - 1).coerceAtLeast(3)
-                                    viewModel.updateProfileDraft { p -> p.copy(gridRows = newVal) }
-                                },
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), CircleShape)
-                            ) {
-                                Text("-", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                            }
-                            Text("${profile.gridRows}", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                            IconButton(
-                                onClick = {
-                                    val newVal = (profile.gridRows + 1).coerceAtMost(8)
-                                    viewModel.updateProfileDraft { p -> p.copy(gridRows = newVal) }
-                                },
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), CircleShape)
-                            ) {
-                                Text("+", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                            }
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "Grid Columns",
-                            fontWeight = FontWeight.SemiBold,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            IconButton(
-                                onClick = {
-                                    val newVal = (profile.gridCols - 1).coerceAtLeast(3)
-                                    viewModel.updateProfileDraft { p -> p.copy(gridCols = newVal) }
-                                },
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), CircleShape)
-                            ) {
-                                Text("-", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                            }
-                            Text("${profile.gridCols}", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                            IconButton(
-                                onClick = {
-                                    val newVal = (profile.gridCols + 1).coerceAtMost(6)
-                                    viewModel.updateProfileDraft { p -> p.copy(gridCols = newVal) }
-                                },
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), CircleShape)
-                            ) {
-                                Text("+", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                            }
-                        }
-                    }
                 }
             }
 
@@ -460,7 +395,6 @@ fun ProfileEditScreen(
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 24.dp)
                 ) {
                     Icon(
                         Icons.Default.Delete,
@@ -478,5 +412,16 @@ fun ProfileEditScreen(
             
             Spacer(modifier = Modifier.height(padding.calculateBottomPadding() + 24.dp))
         }
+    }
+}
+
+@Composable
+fun getProfileIcon(name: String): androidx.compose.ui.graphics.vector.ImageVector {
+    return when (name) {
+        "Work" -> Icons.Outlined.Business
+        "Trading" -> Icons.Outlined.TrendingUp
+        "Study" -> Icons.Outlined.School
+        "Personal" -> Icons.Outlined.Person
+        else -> Icons.Outlined.Star
     }
 }

@@ -31,9 +31,14 @@ import com.focuslauncher.feature.settings.ui.ProfileEditScreen
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-
+import androidx.compose.runtime.LaunchedEffect
+import android.app.role.RoleManager
+import android.content.pm.PackageManager
+import android.provider.Settings
 import androidx.activity.enableEdgeToEdge
 import android.os.Build
+import android.content.Intent
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
 
@@ -75,6 +80,16 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel = ViewModelProvider(this, settingsViewModelFactory)[SettingsViewModel::class.java]
 
             val globalTheme by settingsViewModel.globalTheme.collectAsState()
+            val activeProfileId by settingsViewModel.activeProfileId.collectAsState()
+
+            LaunchedEffect(activeProfileId) {
+                if (activeProfileId != -99L) {
+                    delay(500) // Allow system resolver registry to cache alias state
+                    if (!isDefaultLauncher()) {
+                        promptDefaultLauncher()
+                    }
+                }
+            }
             
             val startDestination = remember {
                 if (settingsViewModel.isFirstInstall()) "onboarding" else "launcher"
@@ -204,6 +219,49 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    private fun isDefaultLauncher(): Boolean {
+        val intent = Intent(Intent.ACTION_MAIN).apply {
+            addCategory(Intent.CATEGORY_HOME)
+        }
+        val resolveInfo = packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+        val currentDefaultPackage = resolveInfo?.activityInfo?.packageName
+        return currentDefaultPackage == packageName
+    }
+
+    private fun promptDefaultLauncher() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = getSystemService(RoleManager::class.java)
+            if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_HOME)) {
+                if (!roleManager.isRoleHeld(RoleManager.ROLE_HOME)) {
+                    try {
+                        val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME)
+                        startActivityForResult(intent, 1001)
+                        return
+                    } catch (e: Exception) {
+                        // Fallback below
+                    }
+                } else {
+                    return
+                }
+            }
+        }
+        
+        // Fallback
+        try {
+            val intent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_HOME)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            try {
+                val intent = Intent(Settings.ACTION_HOME_SETTINGS)
+                startActivity(intent)
+            } catch (ex: Exception) {
             }
         }
     }
