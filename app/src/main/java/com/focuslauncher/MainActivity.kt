@@ -199,12 +199,18 @@ class MainActivity : ComponentActivity() {
                                     lifecycleScope.launch {
                                         val pm = packageManager
                                         val aliasComponent = android.content.ComponentName(this@MainActivity, "com.focuslauncher.HomeActivityAlias")
-                                        pm.setComponentEnabledSetting(
-                                            aliasComponent,
-                                            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                                            PackageManager.DONT_KILL_APP
-                                        )
-                                        delay(600) // Wait for HomeActivityAlias to be registered by the OS
+                                        val currentState = pm.getComponentEnabledSetting(aliasComponent)
+                                        if (currentState != PackageManager.COMPONENT_ENABLED_STATE_ENABLED && 
+                                            currentState != PackageManager.COMPONENT_ENABLED_STATE_DEFAULT) {
+                                            pm.setComponentEnabledSetting(
+                                                aliasComponent,
+                                                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                                                PackageManager.DONT_KILL_APP
+                                            )
+                                            delay(600) // Wait for HomeActivityAlias to be registered by the OS
+                                        } else {
+                                            delay(100) // Brief delay to let database update
+                                        }
                                         if (!isDefaultLauncher()) {
                                             promptDefaultLauncher()
                                         }

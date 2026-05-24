@@ -58,39 +58,60 @@ class FocusApplication : Application() {
         val pm = packageManager
         val aliasComponent = ComponentName(this, "com.focuslauncher.HomeActivityAlias")
         
+        val isDefault = isDefaultLauncher()
+        val shouldBeEnabled = !isDefault || (profileId != -99L)
+        
+        val currentState = pm.getComponentEnabledSetting(aliasComponent)
+        if (shouldBeEnabled) {
+            if (currentState != PackageManager.COMPONENT_ENABLED_STATE_ENABLED && 
+                currentState != PackageManager.COMPONENT_ENABLED_STATE_DEFAULT) {
+                pm.setComponentEnabledSetting(
+                    aliasComponent,
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP
+                )
+            }
+        } else {
+            if (currentState != PackageManager.COMPONENT_ENABLED_STATE_DISABLED) {
+                pm.setComponentEnabledSetting(
+                    aliasComponent,
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP
+                )
+            }
+        }
+
         if (profileId == -99L) {
             // "No Mode" (Return to Samsung One UI):
             
-            // 1. Disable the HomeActivityAlias (removes Focus Launcher as a launcher option)
-            pm.setComponentEnabledSetting(
-                aliasComponent,
-                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                PackageManager.DONT_KILL_APP
-            )
-            
-            // 2. Stop the background app blocker service
+            // Stop the background app blocker service
             stopService(Intent(this, FocusBlockerService::class.java))
             
-            // 3. Force go to Home (reverts to system/Samsung launcher)
+            // Force go to Home (reverts to system/Samsung launcher)
             val homeIntent = Intent(Intent.ACTION_MAIN).apply {
                 addCategory(Intent.CATEGORY_HOME)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
-            startActivity(homeIntent)
+            try {
+                startActivity(homeIntent)
+            } catch (e: Exception) {
+                // Ignore if activity cannot be started (e.g. during early boot)
+            }
             
         } else {
             // A Focus Profile is selected (e.g. Work, Trading, etc.):
             
-            // 1. Enable the HomeActivityAlias
-            pm.setComponentEnabledSetting(
-                aliasComponent,
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                PackageManager.DONT_KILL_APP
-            )
-            
-            // 2. Start the blocker service
+            // Start the blocker service
             startService(Intent(this, FocusBlockerService::class.java))
-            
         }
+    }
+
+    private fun isDefaultLauncher(): Boolean {
+        val intent = Intent(Intent.ACTION_MAIN).apply {
+            addCategory(Intent.CATEGORY_HOME)
+        }
+        val resolveInfo = packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+        val currentDefaultPackage = resolveInfo?.activityInfo?.packageName
+        return currentDefaultPackage == packageName
     }
 }
