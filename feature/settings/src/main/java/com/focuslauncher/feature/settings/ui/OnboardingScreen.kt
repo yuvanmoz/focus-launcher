@@ -17,6 +17,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -105,65 +107,108 @@ fun OnboardingScreen(
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
 
-    val infiniteTransition = rememberInfiniteTransition(label = "GradientMotion")
-    
+    val infiniteTransition = rememberInfiniteTransition(label = "AuroraMotion")
+
     // Slow shifting offsets for gradient
-    val gradientXOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
+    val blueX by infiniteTransition.animateFloat(
+        initialValue = 0.2f,
+        targetValue = 0.8f,
         animationSpec = infiniteRepeatable(
             animation = tween(12000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "gradientX"
+        label = "blueX"
     )
-    val gradientYOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
+    val blueY by infiniteTransition.animateFloat(
+        initialValue = 0.1f,
+        targetValue = 0.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(18000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "blueY"
+    )
+
+    val violetX by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 0.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(14000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "violetX"
+    )
+    val violetY by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 0.9f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(22000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "violetY"
+    )
+
+    val pinkX by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.9f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(16000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pinkX"
+    )
+    val pinkY by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 0.3f,
         animationSpec = infiniteRepeatable(
             animation = tween(15000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "gradientY"
+        label = "pinkY"
     )
 
-    val gradientColors = remember {
-        listOf(
-            Color.Black,
-            Color(0xFF2E1C0C), // Extremely dark warm amber-black
-            Color(0xFFD48C00).copy(alpha = 0.15f), // Very translucent gold
-            Color(0xFFE5A93B).copy(alpha = 0.2f),  // Warm honey gold
-            Color(0xFF5C3A00).copy(alpha = 0.1f),  // Translucent bronze
-            Color.Black
-        )
-    }
+    val blueColor = remember { Color(0xFF80DEEA).copy(alpha = 0.35f) }
+    val violetColor = remember { Color(0xFFB39DDB).copy(alpha = 0.35f) }
+    val pinkColor = remember { Color(0xFFF48FB1).copy(alpha = 0.35f) }
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .drawBehind {
-                // 3 parts pitch-black (top 75%)
-                drawRect(
-                    color = Color.Black,
-                    size = androidx.compose.ui.geometry.Size(width = size.width, height = size.height * 0.75f)
+                // 1. Draw solid black canvas background
+                drawRect(Color.Black)
+
+                // 2. Draw Pastel Blue blob
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(blueColor, Color.Transparent),
+                        center = Offset(size.width * blueX, size.height * blueY),
+                        radius = size.width * 0.9f
+                    ),
+                    center = Offset(size.width * blueX, size.height * blueY),
+                    radius = size.width * 0.9f
                 )
 
-                // 1 part moving gradient (bottom 25%)
-                val startX = size.width * (gradientXOffset - 0.2f)
-                val startY = size.height * 0.75f + (size.height * 0.25f) * gradientYOffset
-                val endX = size.width * (1.2f - gradientXOffset)
-                val endY = size.height * 0.75f + (size.height * 0.25f) * (1f - gradientYOffset)
-
-                val brush = Brush.linearGradient(
-                    colors = gradientColors,
-                    start = Offset(startX, startY),
-                    end = Offset(endX, endY)
+                // 3. Draw Soft Violet blob
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(violetColor, Color.Transparent),
+                        center = Offset(size.width * violetX, size.height * violetY),
+                        radius = size.width * 0.9f
+                    ),
+                    center = Offset(size.width * violetX, size.height * violetY),
+                    radius = size.width * 0.9f
                 )
 
-                drawRect(
-                    brush = brush,
-                    topLeft = Offset(0f, size.height * 0.75f),
-                    size = androidx.compose.ui.geometry.Size(width = size.width, height = size.height * 0.25f)
+                // 4. Draw Gentle Pink blob
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(pinkColor, Color.Transparent),
+                        center = Offset(size.width * pinkX, size.height * pinkY),
+                        radius = size.width * 0.9f
+                    ),
+                    center = Offset(size.width * pinkX, size.height * pinkY),
+                    radius = size.width * 0.9f
                 )
             }
             .statusBarsPadding()
@@ -300,34 +345,18 @@ fun OnboardingPage1() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Centered Focus/Lock Icon Badge
-        Box(
-            modifier = Modifier
-                .size(120.dp)
-                .background(Color.White.copy(alpha = 0.05f), CircleShape)
-                .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(60.dp)
-                    .background(Color.White, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Lock,
-                    contentDescription = null,
-                    tint = Color.Black,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-        }
+        // Centered App Logo
+        Image(
+            painter = painterResource(id = com.focuslauncher.core.common.R.drawable.app_logo),
+            contentDescription = "Honey Launcher Logo",
+            modifier = Modifier.size(120.dp)
+        )
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(36.dp))
 
         Text(
             text = "Welcome to Honey Launcher",
-            fontSize = 24.sp,
+            fontSize = 26.sp,
             fontWeight = FontWeight.ExtraBold,
             color = Color.White,
             fontFamily = FontFamily.SansSerif,
@@ -335,9 +364,9 @@ fun OnboardingPage1() {
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "Honey Launcher. Focus & Zero distractions.",
-            fontSize = 15.sp,
-            color = Color.Gray,
+            text = "Focus & Zero Distraction.",
+            fontSize = 16.sp,
+            color = Color.White.copy(alpha = 0.7f),
             fontFamily = FontFamily.SansSerif,
             textAlign = TextAlign.Center
         )

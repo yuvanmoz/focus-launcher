@@ -140,6 +140,12 @@ class ProfileRepositoryImpl(
             profileDao.insertProfile(
                 FocusProfileEntity(name = "Study", wallpaperPath = null, isSystemWallpaper = false, gridRows = 6, gridCols = 5, themeMode = "LIGHT")
             )
+            profileDao.insertProfile(
+                FocusProfileEntity(name = "Games", wallpaperPath = null, isSystemWallpaper = false, gridRows = 6, gridCols = 5, themeMode = "DARK")
+            )
+            profileDao.insertProfile(
+                FocusProfileEntity(name = "Exercise", wallpaperPath = null, isSystemWallpaper = false, gridRows = 6, gridCols = 5, themeMode = "LIGHT")
+            )
             
             // Set first active profile to No Mode (-99L)
             setActiveProfile(-99L)

@@ -31,6 +31,8 @@ import com.focuslauncher.core.common.theme.PersonalAccent
 import com.focuslauncher.core.common.theme.StudyAccent
 import com.focuslauncher.core.common.theme.TradingAccent
 import com.focuslauncher.core.common.theme.WorkAccent
+import com.focuslauncher.core.common.theme.GamesAccent
+import com.focuslauncher.core.common.theme.ExerciseAccent
 import com.focuslauncher.core.model.FocusProfile
 
 @Composable
@@ -63,6 +65,8 @@ fun ProfileSwitcherDock(
                     "Trading" -> TradingAccent
                     "Study" -> StudyAccent
                     "Personal" -> PersonalAccent
+                    "Games" -> GamesAccent
+                    "Exercise" -> ExerciseAccent
                     else -> MaterialTheme.colorScheme.primary
                 }
 

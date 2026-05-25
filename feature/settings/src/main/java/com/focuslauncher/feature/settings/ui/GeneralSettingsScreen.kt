@@ -249,42 +249,6 @@ fun GeneralSettingsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 4. About
-            SettingsSectionHeader(icon = Icons.Outlined.Info, title = "About")
-            Spacer(modifier = Modifier.height(2.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp, vertical = 8.dp)
-            ) {
-                Column {
-                    Text(
-                        text = "Honey Launcher",
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.SansSerif,
-                        fontSize = 16.sp
-                    )
-                    Text(
-                        text = "Version 1.0.0 (Samsung One UI Minimalist)",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontFamily = FontFamily.SansSerif,
-                        fontSize = 11.sp
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Divider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Designed as an agentic workspace overlay that replaces complex setups with simple psychological contexts to reclaim control of your digital time.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontFamily = FontFamily.SansSerif,
-                        fontSize = 13.sp
-                    )
-                }
-            }
-
             Spacer(modifier = Modifier.height(padding.calculateBottomPadding() + 16.dp))
         }
     }

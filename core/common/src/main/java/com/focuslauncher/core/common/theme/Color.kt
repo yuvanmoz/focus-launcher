@@ -25,6 +25,8 @@ val TradingAccent = Color(0xFF00C853)
 val StudyAccent = Color(0xFFFF9100)
 val WorkAccent = Color(0xFF2979FF)
 val PersonalAccent = Color(0xFFD500F9)
+val GamesAccent = Color(0xFF00E5FF)       // Vibrant Cyan
+val ExerciseAccent = Color(0xFFFF5252)    // Vibrant Coral/Red
 
 // Frosted Glass Layer Overlay Color
 val GlassOverlayDark = Color(0x6612121A)

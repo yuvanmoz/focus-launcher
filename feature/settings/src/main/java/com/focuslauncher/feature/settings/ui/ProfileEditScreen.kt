@@ -37,6 +37,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.focuslauncher.core.common.theme.ExerciseAccent
+import com.focuslauncher.core.common.theme.GamesAccent
 import com.focuslauncher.core.common.theme.PersonalAccent
 import com.focuslauncher.core.common.theme.StudyAccent
 import com.focuslauncher.core.common.theme.TradingAccent
@@ -87,6 +89,8 @@ fun ProfileEditScreen(
         "Trading" -> TradingAccent
         "Study" -> StudyAccent
         "Personal" -> PersonalAccent
+        "Games" -> GamesAccent
+        "Exercise" -> ExerciseAccent
         else -> MaterialTheme.colorScheme.primary
     }
 

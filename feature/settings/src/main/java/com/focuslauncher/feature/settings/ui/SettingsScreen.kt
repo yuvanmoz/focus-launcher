@@ -26,13 +26,14 @@ import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.foundation.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -41,10 +42,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.focuslauncher.core.common.theme.ExerciseAccent
 import com.focuslauncher.core.common.theme.FocusLauncherTheme
+import com.focuslauncher.core.common.theme.GamesAccent
 import com.focuslauncher.core.common.theme.PersonalAccent
 import com.focuslauncher.core.common.theme.StudyAccent
 import com.focuslauncher.core.common.theme.TradingAccent
@@ -66,18 +70,13 @@ fun SettingsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
-                    Text(
-                        "Modes",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleLarge
+                    Image(
+                        painter = painterResource(id = com.focuslauncher.core.common.R.drawable.app_logo),
+                        contentDescription = "Honey Launcher Logo",
+                        modifier = Modifier.size(36.dp)
                     )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
                 },
                 actions = {
                     IconButton(onClick = onNavigateToGeneralSettings) {
@@ -87,7 +86,7 @@ fun SettingsScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
             )
@@ -109,16 +108,10 @@ fun SettingsScreen(
             item {
                 Column(modifier = Modifier.padding(vertical = 4.dp)) {
                     Text(
-                        "Manage Profiles",
+                        "Modes",
                         style = MaterialTheme.typography.titleLarge.copy(fontSize = 24.sp),
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        "Customize active apps and wallpapers.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -231,6 +224,8 @@ fun ProfileRowItem(
         "Trading" -> TradingAccent
         "Study" -> StudyAccent
         "Personal" -> PersonalAccent
+        "Games" -> GamesAccent
+        "Exercise" -> ExerciseAccent
         else -> MaterialTheme.colorScheme.primary
     }
 
