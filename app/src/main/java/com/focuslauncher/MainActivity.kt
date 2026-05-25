@@ -302,7 +302,7 @@ class MainActivity : ComponentActivity() {
             // Prompt the user to enable Device Admin
             val intent = Intent(android.app.admin.DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
                 putExtra(android.app.admin.DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
-                putExtra(android.app.admin.DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Focus Launcher needs admin permission to lock the screen when you double-tap.")
+                putExtra(android.app.admin.DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Honey Launcher needs admin permission to lock the screen when you double-tap.")
             }
             startActivity(intent)
         }

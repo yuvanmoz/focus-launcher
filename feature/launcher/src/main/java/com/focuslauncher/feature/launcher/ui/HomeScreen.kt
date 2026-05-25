@@ -500,7 +500,7 @@ fun HomeScreen(
                 AlertDialog(
                     onDismissRequest = { /* Don't dismiss automatically */ },
                     title = { Text("Usage Stats Permission Required") },
-                    text = { Text("Focus Launcher needs Usage Access permission to detect when unallowed apps are opened and block them during focus mode.") },
+                    text = { Text("Honey Launcher needs Usage Access permission to detect when unallowed apps are opened and block them during focus mode.") },
                     confirmButton = {
                         TextButton(
                             onClick = {
@@ -530,7 +530,7 @@ fun HomeScreen(
                 AlertDialog(
                     onDismissRequest = { /* Don't dismiss automatically */ },
                     title = { Text("Notification Access Required") },
-                    text = { Text("Focus Launcher needs Notification Listener access to temporarily suppress and queue notifications from blocked apps.") },
+                    text = { Text("Honey Launcher needs Notification Listener access to temporarily suppress and queue notifications from blocked apps.") },
                     confirmButton = {
                         TextButton(
                             onClick = {

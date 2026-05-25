@@ -18,7 +18,7 @@
         android:name=".FocusApplication"
         android:allowBackup="true"
         android:icon="@android:drawable/sym_def_app_icon"
-        android:label="Focus Launcher"
+        android:label="Honey Launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.FocusLauncher">
         
@@ -42,7 +42,7 @@
             android:name="com.focuslauncher.HomeActivityAlias"
             android:targetActivity="com.focuslauncher.MainActivity"
             android:enabled="true"
-            android:label="Focus Launcher"
+            android:label="Honey Launcher"
             android:icon="@android:drawable/sym_def_app_icon"
             android:exported="true">
             <intent-filter>

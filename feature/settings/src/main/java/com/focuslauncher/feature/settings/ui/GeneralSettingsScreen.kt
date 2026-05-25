@@ -199,7 +199,7 @@ fun GeneralSettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Configure system home registry to set Focus Launcher or return back to native settings.",
+                        text = "Configure system home registry to set Honey Launcher or return back to native settings.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontFamily = FontFamily.SansSerif,
                         fontSize = 12.sp
@@ -219,7 +219,7 @@ fun GeneralSettingsScreen(
             ) {
                 Column {
                     Text(
-                        text = "Focus Launcher",
+                        text = "Honey Launcher",
                         color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.SansSerif,

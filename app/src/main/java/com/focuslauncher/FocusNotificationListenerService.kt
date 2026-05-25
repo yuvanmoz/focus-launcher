@@ -131,10 +131,10 @@ class FocusNotificationListenerService : NotificationListenerService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Focus Launcher Notifications",
+                "Honey Launcher Notifications",
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "Intercepted and restored notifications from Focus Launcher"
+                description = "Intercepted and restored notifications from Honey Launcher"
             }
             notificationManager.createNotificationChannel(channel)
         }
