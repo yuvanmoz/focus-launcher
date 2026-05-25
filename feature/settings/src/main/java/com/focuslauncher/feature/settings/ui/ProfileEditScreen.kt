@@ -140,8 +140,6 @@ fun ProfileEditScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 42.dp) // half of icon size (84.dp / 2 = 42.dp)
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(MaterialTheme.colorScheme.surface) // Adapts to theme (surface)
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -188,7 +186,6 @@ fun ProfileEditScreen(
                 Box(
                     modifier = Modifier
                         .size(84.dp)
-                        .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape) // Adapts to theme (surfaceVariant)
                         .align(Alignment.TopCenter),
                     contentAlignment = Alignment.Center
                 ) {
@@ -297,10 +294,10 @@ fun ProfileEditScreen(
                         .weight(1f)
                         .height(110.dp)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(if (isDefault) accentColor.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f))
+                        .background(if (isDefault) accentColor.copy(alpha = 0.08f) else Color.Transparent)
                         .border(
                             width = if (isDefault) 2.dp else 1.dp,
-                            color = if (isDefault) accentColor else Color.Transparent,
+                            color = if (isDefault) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
                             shape = RoundedCornerShape(16.dp)
                         )
                         .clickable { viewModel.clearCustomWallpaper() }
@@ -330,10 +327,10 @@ fun ProfileEditScreen(
                         .weight(1f)
                         .height(110.dp)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(if (isCustom) accentColor.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f))
+                        .background(if (isCustom) accentColor.copy(alpha = 0.08f) else Color.Transparent)
                         .border(
                             width = if (isCustom) 2.dp else 1.dp,
-                            color = if (isCustom) accentColor else Color.Transparent,
+                            color = if (isCustom) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
                             shape = RoundedCornerShape(16.dp)
                         )
                         .clickable {

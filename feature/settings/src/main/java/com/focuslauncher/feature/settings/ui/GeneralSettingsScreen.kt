@@ -24,8 +24,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Divider
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -95,17 +98,13 @@ fun GeneralSettingsScreen(
                 .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // 1. Theme Configuration
             SettingsSectionHeader(icon = Icons.Outlined.Settings, title = "Appearance")
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-                    .padding(vertical = 8.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 listOf("SYSTEM" to "System Default", "LIGHT" to "Light", "DARK" to "Dark").forEach { (value, label) ->
                     val selected = globalTheme == value
@@ -113,14 +112,14 @@ fun GeneralSettingsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { viewModel.setGlobalTheme(value) }
-                            .padding(horizontal = 20.dp, vertical = 14.dp),
+                            .padding(horizontal = 4.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
                             text = label,
                             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 16.sp,
+                            fontSize = 15.sp,
                             fontFamily = FontFamily.SansSerif,
                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
                         )
@@ -130,24 +129,65 @@ fun GeneralSettingsScreen(
                             colors = RadioButtonDefaults.colors(
                                 selectedColor = MaterialTheme.colorScheme.primary,
                                 unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                            )
+                            ),
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // 2. Default Launcher switcher
+            // 2. Gestures
+            SettingsSectionHeader(icon = Icons.Outlined.Lock, title = "Gestures")
+            Spacer(modifier = Modifier.height(2.dp))
+            val doubleTapToLockEnabled by viewModel.doubleTapToLock.collectAsState()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { viewModel.setDoubleTapToLockEnabled(!doubleTapToLockEnabled) }
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Double-Tap to Lock",
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.SansSerif,
+                        fontSize = 15.sp
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Double-tap empty space on home screen to lock device",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontFamily = FontFamily.SansSerif,
+                        fontSize = 12.sp
+                    )
+                }
+                Switch(
+                    checked = doubleTapToLockEnabled,
+                    onCheckedChange = { viewModel.setDoubleTapToLockEnabled(it) },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                        uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 3. Default Launcher switcher
             SettingsSectionHeader(icon = Icons.Outlined.Home, title = "Default Launcher")
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                     .clickable { openDefaultLauncherSettings(context) }
-                    .padding(20.dp)
+                    .padding(horizontal = 4.dp, vertical = 8.dp)
             ) {
                 Column {
                     Text(
@@ -155,29 +195,27 @@ fun GeneralSettingsScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.SansSerif,
-                        fontSize = 16.sp
+                        fontSize = 15.sp
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "Configure system home registry to set Focus Launcher or return back to native settings.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontFamily = FontFamily.SansSerif,
-                        fontSize = 13.sp
+                        fontSize = 12.sp
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // 3. About
+            // 4. About
             SettingsSectionHeader(icon = Icons.Outlined.Info, title = "About")
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-                    .padding(20.dp)
+                    .padding(horizontal = 4.dp, vertical = 8.dp)
             ) {
                 Column {
                     Text(
@@ -185,27 +223,27 @@ fun GeneralSettingsScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.SansSerif,
-                        fontSize = 17.sp
+                        fontSize = 16.sp
                     )
                     Text(
                         text = "Version 1.0.0 (Samsung One UI Minimalist)",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontFamily = FontFamily.SansSerif,
-                        fontSize = 12.sp
+                        fontSize = 11.sp
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     Divider(color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f))
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Designed as an agentic workspace overlay that replaces complex setups with simple psychological contexts to reclaim control of your digital time.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontFamily = FontFamily.SansSerif,
-                        fontSize = 14.sp
+                        fontSize = 13.sp
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(padding.calculateBottomPadding() + 32.dp))
+            Spacer(modifier = Modifier.height(padding.calculateBottomPadding() + 16.dp))
         }
     }
 }

@@ -156,15 +156,7 @@ fun HomeScreen(
         ),
         label = "WiggleOffset"
     )
-    val targetScale by infiniteTransition.animateFloat(
-        initialValue = 0.95f,
-        targetValue = 1.05f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "TargetScale"
-    )
+
 
         Box(
             modifier = modifier
@@ -194,7 +186,7 @@ fun HomeScreen(
                     val cellWidthPx = with(density) { cellWidth.toPx() }
                     val cellHeightPx = with(density) { cellHeight.toPx() }
 
-                    // Workspace canvas area to detect double tap to lock & long press/drag gestures
+                    // Workspace canvas area to detect double tap to lock & long press gestures
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -209,39 +201,14 @@ fun HomeScreen(
                                                 onLockScreen()
                                             }
                                         }
-                                    }
-                                )
-                            }
-                            .pointerInput(homeApps) {
-                                detectDragGesturesAfterLongPress(
-                                    onDragStart = { offset ->
+                                    },
+                                    onLongPress = { offset ->
                                         val cellX = (offset.x / cellWidthPx).toInt().coerceIn(0, cols - 1)
                                         val cellY = (offset.y / cellHeightPx).toInt().coerceIn(0, rows - 1)
                                         val app = homeApps.find { it.item.cellX == cellX && it.item.cellY == cellY }
-                                        if (app != null) {
-                                            draggingApp = app
-                                            dragPosition = offset
-                                        } else {
-                                            // Long pressed empty area triggers settings
+                                        if (app == null) {
                                             onNavigateToSettings()
                                         }
-                                    },
-                                    onDrag = { change, dragAmount ->
-                                        change.consume()
-                                        if (draggingApp != null) {
-                                            dragPosition += dragAmount
-                                        }
-                                    },
-                                    onDragEnd = {
-                                        if (draggingApp != null) {
-                                            val finalX = (dragPosition.x / cellWidthPx).toInt().coerceIn(0, cols - 1)
-                                            val finalY = (dragPosition.y / cellHeightPx).toInt().coerceIn(0, rows - 1)
-                                            viewModel.updateAppPosition(draggingApp!!.item.id, finalX, finalY)
-                                            draggingApp = null
-                                        }
-                                    },
-                                    onDragCancel = {
-                                        draggingApp = null
                                     }
                                 )
                             }
@@ -265,45 +232,15 @@ fun HomeScreen(
                                         ) {
                                             Box(
                                                 modifier = Modifier
-                                                    .size(16.dp)
+                                                    .size(6.dp)
                                                     .background(
-                                                        color = Color.White.copy(alpha = 0.2f),
+                                                        color = Color.White.copy(alpha = 0.25f),
                                                         shape = CircleShape
                                                     )
                                             )
                                         }
                                     }
                                 }
-                            }
-
-                            // Hover target focal ring (soft, blurred, circular)
-                            val hoverX = (dragPosition.x / cellWidthPx).toInt().coerceIn(0, cols - 1)
-                            val hoverY = (dragPosition.y / cellHeightPx).toInt().coerceIn(0, rows - 1)
-
-                            Box(
-                                modifier = Modifier
-                                    .offset(x = cellWidth * hoverX, y = cellHeight * hoverY)
-                                    .size(width = cellWidth, height = cellHeight)
-                                    .padding(6.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .graphicsLayer {
-                                            scaleX = targetScale
-                                            scaleY = targetScale
-                                        }
-                                        .background(
-                                            color = Color.White.copy(alpha = 0.15f),
-                                            shape = RoundedCornerShape(16.dp)
-                                        )
-                                        .border(
-                                            width = 2.dp,
-                                            color = Color.White.copy(alpha = 0.4f),
-                                            shape = RoundedCornerShape(16.dp)
-                                        )
-                                )
                             }
                         }
 
@@ -358,6 +295,30 @@ fun HomeScreen(
                                                 rotationZ = wiggleRotation
                                                 translationY = wiggleOffset.dp.toPx()
                                             }
+                                        }
+                                        .pointerInput(homeApp) {
+                                            detectDragGesturesAfterLongPress(
+                                                onDragStart = { offset ->
+                                                    draggingApp = homeApp
+                                                    dragPosition = Offset(
+                                                        cellWidthPx * homeApp.item.cellX + offset.x,
+                                                        cellHeightPx * homeApp.item.cellY + offset.y
+                                                    )
+                                                },
+                                                onDrag = { change, dragAmount ->
+                                                    change.consume()
+                                                    dragPosition += dragAmount
+                                                },
+                                                onDragEnd = {
+                                                    val finalX = (dragPosition.x / cellWidthPx).toInt().coerceIn(0, cols - 1)
+                                                    val finalY = (dragPosition.y / cellHeightPx).toInt().coerceIn(0, rows - 1)
+                                                    viewModel.updateAppPosition(homeApp.item.id, finalX, finalY)
+                                                    draggingApp = null
+                                                },
+                                                onDragCancel = {
+                                                    draggingApp = null
+                                                }
+                                            )
                                         },
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -389,7 +350,7 @@ fun HomeScreen(
                                         scaleX = dragScale
                                         scaleY = dragScale
                                         rotationZ = 6f // Premium organic tilt
-                                        shadowElevation = (16.dp * dragScale).toPx()
+                                        shadowElevation = 0f
                                         clip = false
                                     },
                                 contentAlignment = Alignment.Center
@@ -407,27 +368,27 @@ fun HomeScreen(
                 // Spacer to create a clear visual gap between workspace bottom and dock top
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Premium floating dock container like iOS with translucent frosted glass look
+                // Premium floating dock container matching Samsung One UI aesthetic
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
-                        .padding(bottom = 16.dp)
+                        .padding(horizontal = 12.dp)
+                        .padding(bottom = 8.dp)
                         .navigationBarsPadding(),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(90.dp)
+                            .height(80.dp)
                             .background(
-                                color = Color.White.copy(alpha = 0.08f),
-                                shape = RoundedCornerShape(30.dp)
+                                color = Color.White.copy(alpha = 0.05f),
+                                shape = RoundedCornerShape(36.dp)
                             )
                             .border(
-                                width = 1.dp,
-                                color = Color.White.copy(alpha = 0.12f),
-                                shape = RoundedCornerShape(30.dp)
+                                width = 0.8.dp,
+                                color = Color.White.copy(alpha = 0.08f),
+                                shape = RoundedCornerShape(36.dp)
                             )
                             .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -694,7 +655,7 @@ fun AppIconItem(
         verticalArrangement = Arrangement.Center
     ) {
         Box(
-            modifier = Modifier.size(56.dp),
+            modifier = Modifier.size(52.dp),
             contentAlignment = Alignment.Center
         ) {
             if (iconDrawable != null) {
@@ -716,13 +677,13 @@ fun AppIconItem(
         }
 
         if (showLabel) {
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
                 text = app.label,
                 style = TextStyle(
                     color = Color.White,
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Normal,
                     shadow = Shadow(
                         color = Color.Black.copy(alpha = 0.85f),
