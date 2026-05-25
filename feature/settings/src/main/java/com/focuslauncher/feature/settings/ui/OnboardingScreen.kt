@@ -4,6 +4,15 @@ import android.content.Intent
 import android.app.Activity
 import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -96,10 +105,67 @@ fun OnboardingScreen(
     val pagerState = rememberPagerState(pageCount = { 3 })
     val coroutineScope = rememberCoroutineScope()
 
+    val infiniteTransition = rememberInfiniteTransition(label = "GradientMotion")
+    
+    // Slow shifting offsets for gradient
+    val gradientXOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(12000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "gradientX"
+    )
+    val gradientYOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(15000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "gradientY"
+    )
+
+    val gradientColors = remember {
+        listOf(
+            Color.Black,
+            Color(0xFF2E1C0C), // Extremely dark warm amber-black
+            Color(0xFFD48C00).copy(alpha = 0.15f), // Very translucent gold
+            Color(0xFFE5A93B).copy(alpha = 0.2f),  // Warm honey gold
+            Color(0xFF5C3A00).copy(alpha = 0.1f),  // Translucent bronze
+            Color.Black
+        )
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black) // Solid pitch-black
+            .drawBehind {
+                // 3 parts pitch-black (top 75%)
+                drawRect(
+                    color = Color.Black,
+                    size = androidx.compose.ui.geometry.Size(width = size.width, height = size.height * 0.75f)
+                )
+
+                // 1 part moving gradient (bottom 25%)
+                val startX = size.width * (gradientXOffset - 0.2f)
+                val startY = size.height * 0.75f + (size.height * 0.25f) * gradientYOffset
+                val endX = size.width * (1.2f - gradientXOffset)
+                val endY = size.height * 0.75f + (size.height * 0.25f) * (1f - gradientYOffset)
+
+                val brush = Brush.linearGradient(
+                    colors = gradientColors,
+                    start = Offset(startX, startY),
+                    end = Offset(endX, endY)
+                )
+
+                drawRect(
+                    brush = brush,
+                    topLeft = Offset(0f, size.height * 0.75f),
+                    size = androidx.compose.ui.geometry.Size(width = size.width, height = size.height * 0.25f)
+                )
+            }
             .statusBarsPadding()
             .navigationBarsPadding()
             .padding(horizontal = 24.dp, vertical = 16.dp)

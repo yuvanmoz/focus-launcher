@@ -22,11 +22,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,10 +42,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,6 +75,18 @@ fun AppSelectorScreen(
     // Determine essential apps dynamically
     val essentialPackages = remember(installedApps) {
         getEssentialPackages(context)
+    }
+
+    var searchQuery by remember { mutableStateOf("") }
+
+    val filteredApps = remember(installedApps, searchQuery) {
+        installedApps.filter {
+            it.label.contains(searchQuery, ignoreCase = true)
+        }
+    }
+
+    val selectedApps = remember(installedApps, allowedApps) {
+        installedApps.filter { allowedApps.contains(it.uniqueId) }
     }
 
     Scaffold(
@@ -104,7 +125,7 @@ fun AppSelectorScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .padding(horizontal = 24.dp, vertical = 12.dp)
             ) {
                 Text(
                     text = "Select the applications that you want to show on your focus home screen. Unselected apps will be hidden and blocked from launching.",
@@ -112,6 +133,121 @@ fun AppSelectorScreen(
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
+
+            // Sideways scrollable row of selected app icons (only if not empty)
+            if (selectedApps.isNotEmpty()) {
+                Text(
+                    text = "Selected Apps (${selectedApps.size})",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                ) {
+                    items(selectedApps, key = { it.uniqueId }) { app ->
+                        val isEssential = essentialPackages.contains(app.packageName)
+                        Box(
+                            modifier = Modifier
+                                .size(50.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surface)
+                                .clickable {
+                                    if (!isEssential) {
+                                        viewModel.toggleAppAllowed(app.uniqueId)
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val iconDrawable = remember(app.packageName) { viewModel.getAppIcon(app.packageName) }
+                            if (iconDrawable != null) {
+                                androidx.compose.ui.viewinterop.AndroidView(
+                                    factory = { context ->
+                                        android.widget.ImageView(context).apply {
+                                            setImageDrawable(iconDrawable)
+                                        }
+                                    },
+                                    modifier = Modifier.size(36.dp)
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                                )
+                            }
+                            
+                            // Small red indicator on top-right to show it can be removed
+                            if (!isEssential) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.error)
+                                        .align(Alignment.TopEnd),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Remove",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(10.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Search Text Field
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { 
+                    Text(
+                        text = "Search apps...",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    ) 
+                },
+                leadingIcon = { 
+                    Icon(
+                        imageVector = Icons.Default.Search, 
+                        contentDescription = "Search",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    ) 
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(
+                                imageVector = Icons.Default.Close, 
+                                contentDescription = "Clear search",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = Color.Transparent,
+                    disabledBorderColor = Color.Transparent
+                ),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Scrollable Application checklist
             LazyColumn(
@@ -139,8 +275,24 @@ fun AppSelectorScreen(
                             )
                         }
                     }
+                } else if (filteredApps.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 48.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No matching apps found",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
                 } else {
-                    items(installedApps, key = { it.uniqueId }) { app ->
+                    items(filteredApps, key = { it.uniqueId }) { app ->
                         val isEssential = essentialPackages.contains(app.packageName)
                         val isChecked = isEssential || allowedApps.contains(app.uniqueId)
 

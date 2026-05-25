@@ -2,6 +2,8 @@ package com.focuslauncher.feature.settings.ui
 
 import android.content.Context
 import android.content.Intent
+import android.content.ComponentName
+import android.app.admin.DevicePolicyManager
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.background
@@ -42,6 +44,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -141,11 +144,50 @@ fun GeneralSettingsScreen(
             // 2. Gestures
             SettingsSectionHeader(icon = Icons.Outlined.Lock, title = "Gestures")
             Spacer(modifier = Modifier.height(2.dp))
+            val dpm = remember { context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager }
+            val adminComponent = remember { ComponentName("com.focuslauncher", "com.focuslauncher.FocusDeviceAdminReceiver") }
             val doubleTapToLockEnabled by viewModel.doubleTapToLock.collectAsState()
+            
+            val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+            androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+                val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                    if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                        val active = dpm.isAdminActive(adminComponent)
+                        if (active != doubleTapToLockEnabled) {
+                            viewModel.setDoubleTapToLockEnabled(active)
+                        }
+                    }
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose {
+                    lifecycleOwner.lifecycle.removeObserver(observer)
+                }
+            }
+            
+            val toggleAction = { targetValue: Boolean ->
+                if (targetValue) {
+                    if (!dpm.isAdminActive(adminComponent)) {
+                        try {
+                            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
+                                putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
+                                putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Honey Launcher needs admin permission to lock the screen when you double-tap.")
+                            }
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            android.widget.Toast.makeText(context, "Cannot request admin permission: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    } else {
+                        viewModel.setDoubleTapToLockEnabled(true)
+                    }
+                } else {
+                    viewModel.setDoubleTapToLockEnabled(false)
+                }
+            }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { viewModel.setDoubleTapToLockEnabled(!doubleTapToLockEnabled) }
+                    .clickable { toggleAction(!doubleTapToLockEnabled) }
                     .padding(horizontal = 4.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -168,7 +210,7 @@ fun GeneralSettingsScreen(
                 }
                 Switch(
                     checked = doubleTapToLockEnabled,
-                    onCheckedChange = { viewModel.setDoubleTapToLockEnabled(it) },
+                    onCheckedChange = { toggleAction(it) },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.primary,
                         checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
