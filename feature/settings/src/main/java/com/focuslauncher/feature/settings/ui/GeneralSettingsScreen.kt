@@ -167,13 +167,16 @@ fun GeneralSettingsScreen(
             val toggleAction = { targetValue: Boolean ->
                 if (targetValue) {
                     if (!dpm.isAdminActive(adminComponent)) {
+                        viewModel.setDoubleTapToLockEnabled(true)
                         try {
                             val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
                                 putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
                                 putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Honey Launcher needs admin permission to lock the screen when you double-tap.")
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             }
                             context.startActivity(intent)
                         } catch (e: Exception) {
+                            viewModel.setDoubleTapToLockEnabled(false)
                             android.widget.Toast.makeText(context, "Cannot request admin permission: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
                         }
                     } else {
@@ -241,7 +244,7 @@ fun GeneralSettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Configure system home registry to set Honey Launcher or return back to native settings.",
+                        text = "Configure system home registry to set default launcher.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontFamily = FontFamily.SansSerif,
                         fontSize = 12.sp

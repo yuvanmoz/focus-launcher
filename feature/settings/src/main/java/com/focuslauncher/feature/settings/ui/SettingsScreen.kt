@@ -40,6 +40,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -75,7 +76,9 @@ fun SettingsScreen(
                     Image(
                         painter = painterResource(id = com.focuslauncher.core.common.R.drawable.app_logo),
                         contentDescription = "Honey Launcher Logo",
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .size(36.dp)
                     )
                 },
                 actions = {
@@ -106,12 +109,18 @@ fun SettingsScreen(
         ) {
             // Title header
             item {
-                Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
                         "Modes",
                         style = MaterialTheme.typography.titleLarge.copy(fontSize = 24.sp),
                         fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = MaterialTheme.colorScheme.onBackground,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
@@ -178,37 +187,7 @@ fun SettingsScreen(
                 }
             }
 
-            // System info card
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 8.dp)
-                ) {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = "Info",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Honey Launcher",
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "This is a custom launcher designed to block distracting apps and swap layouts. Tap home settings to make this your default launcher.",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
+
         }
     }
 }
