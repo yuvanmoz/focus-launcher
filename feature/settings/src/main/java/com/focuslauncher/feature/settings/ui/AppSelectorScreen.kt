@@ -24,7 +24,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalOverscrollConfiguration
+import androidx.compose.runtime.CompositionLocalProvider
+import com.focuslauncher.core.common.rememberRubberBandOverscrollState
+import com.focuslauncher.core.common.rememberRubberBandNestedScrollConnection
+import com.focuslauncher.core.common.rememberFrictionFlingBehavior
+import com.focuslauncher.core.common.rubberBandStretch
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
@@ -89,8 +98,16 @@ fun AppSelectorScreen(
         installedApps.filter { allowedApps.contains(it.uniqueId) }
     }
 
-    Scaffold(
-        topBar = {
+    val overscrollState = rememberRubberBandOverscrollState()
+    val nestedScrollConnection = rememberRubberBandNestedScrollConnection(overscrollState)
+    val flingBehavior = rememberFrictionFlingBehavior()
+
+    @OptIn(ExperimentalFoundationApi::class)
+    CompositionLocalProvider(
+        LocalOverscrollConfiguration provides null
+    ) {
+        Scaffold(
+            topBar = {
             TopAppBar(
                 title = {
                     Text(
@@ -114,7 +131,7 @@ fun AppSelectorScreen(
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
-        modifier = modifier
+        modifier = modifier.nestedScroll(nestedScrollConnection)
     ) { padding ->
         Column(
             modifier = Modifier
@@ -249,6 +266,8 @@ fun AppSelectorScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
+            val totalItems = if (installedApps.isEmpty() || filteredApps.isEmpty()) 1 else filteredApps.size
+
             // Scrollable Application checklist
             LazyColumn(
                 contentPadding = PaddingValues(
@@ -257,12 +276,14 @@ fun AppSelectorScreen(
                     bottom = padding.calculateBottomPadding() + 24.dp
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
+                flingBehavior = flingBehavior,
                 modifier = Modifier.fillMaxSize()
             ) {
                 if (installedApps.isEmpty()) {
                     item {
                         Box(
                             modifier = Modifier
+                                .rubberBandStretch(0, 1, overscrollState)
                                 .fillMaxWidth()
                                 .padding(vertical = 48.dp),
                             contentAlignment = Alignment.Center
@@ -279,6 +300,7 @@ fun AppSelectorScreen(
                     item {
                         Box(
                             modifier = Modifier
+                                .rubberBandStretch(0, 1, overscrollState)
                                 .fillMaxWidth()
                                 .padding(vertical = 48.dp),
                             contentAlignment = Alignment.Center
@@ -292,26 +314,31 @@ fun AppSelectorScreen(
                         }
                     }
                 } else {
-                    items(filteredApps, key = { it.uniqueId }) { app ->
+                    itemsIndexed(filteredApps, key = { _, it -> it.uniqueId }) { index, app ->
                         val isEssential = essentialPackages.contains(app.packageName)
                         val isChecked = isEssential || allowedApps.contains(app.uniqueId)
 
-                        AppChecklistItem(
-                            app = app,
-                            isChecked = isChecked,
-                            isEssential = isEssential,
-                            viewModel = viewModel,
-                            onClick = {
-                                if (!isEssential) {
-                                    viewModel.toggleAppAllowed(app.uniqueId)
+                        Box(
+                            modifier = Modifier.rubberBandStretch(index, totalItems, overscrollState)
+                        ) {
+                            AppChecklistItem(
+                                app = app,
+                                isChecked = isChecked,
+                                isEssential = isEssential,
+                                viewModel = viewModel,
+                                onClick = {
+                                    if (!isEssential) {
+                                        viewModel.toggleAppAllowed(app.uniqueId)
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
         }
     }
+}
 }
 
 @Composable

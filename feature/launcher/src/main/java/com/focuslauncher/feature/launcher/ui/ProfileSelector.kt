@@ -10,14 +10,22 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalOverscrollConfiguration
+import com.focuslauncher.core.common.rememberRubberBandOverscrollState
+import com.focuslauncher.core.common.rememberRubberBandNestedScrollConnection
+import com.focuslauncher.core.common.rememberFrictionFlingBehavior
+import com.focuslauncher.core.common.rubberBandStretch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,22 +51,33 @@ fun ProfileSwitcherDock(
     darkTheme: Boolean,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (darkTheme) GlassOverlayDark else GlassOverlayLight
-        ),
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp)
+    val overscrollState = rememberRubberBandOverscrollState()
+    val nestedScrollConnection = rememberRubberBandNestedScrollConnection(overscrollState)
+    val flingBehavior = rememberFrictionFlingBehavior()
+    val totalItems = profiles.size
+
+    @OptIn(ExperimentalFoundationApi::class)
+    CompositionLocalProvider(
+        LocalOverscrollConfiguration provides null
     ) {
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+        Card(
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (darkTheme) GlassOverlayDark else GlassOverlayLight
+            ),
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .nestedScroll(nestedScrollConnection)
         ) {
-            items(profiles, key = { it.id }) { profile ->
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                flingBehavior = flingBehavior,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                itemsIndexed(profiles, key = { _, it -> it.id }) { index, profile ->
                 val isActive = profile.id == activeProfileId
                 val accentColor = when (profile.name) {
                     "Work" -> WorkAccent
@@ -86,6 +105,7 @@ fun ProfileSwitcherDock(
 
                 Box(
                     modifier = Modifier
+                        .rubberBandStretch(index, totalItems, overscrollState, horizontal = true)
                         .clip(RoundedCornerShape(20.dp))
                         .background(itemBgColor)
                         .clickable { onProfileSelected(profile.id) }
@@ -99,6 +119,7 @@ fun ProfileSwitcherDock(
                         fontSize = 14.sp
                     )
                 }
+            }
             }
         }
     }

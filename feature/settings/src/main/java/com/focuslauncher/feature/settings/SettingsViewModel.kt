@@ -54,8 +54,6 @@ class SettingsViewModel(
     val isFirstInstall: StateFlow<Boolean> = profileRepository.isFirstInstallFlow
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
-    val doubleTapToLock: StateFlow<Boolean> = profileRepository.doubleTapToLockFlow
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     fun setGlobalTheme(theme: String) {
         viewModelScope.launch {
@@ -69,11 +67,6 @@ class SettingsViewModel(
         }
     }
 
-    fun setDoubleTapToLockEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            profileRepository.setDoubleTapToLockEnabled(enabled)
-        }
-    }
 
     fun isFirstInstall(): Boolean {
         return profileRepository.isFirstInstall()

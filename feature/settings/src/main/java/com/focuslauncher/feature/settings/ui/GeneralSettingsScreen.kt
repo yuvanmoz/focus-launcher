@@ -26,9 +26,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.Divider
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalOverscrollConfiguration
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.rememberScrollState
+import com.focuslauncher.core.common.rememberRubberBandOverscrollState
+import com.focuslauncher.core.common.rememberRubberBandNestedScrollConnection
+import com.focuslauncher.core.common.rememberFrictionFlingBehavior
+import com.focuslauncher.core.common.rubberBandStretch
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -66,8 +73,16 @@ fun GeneralSettingsScreen(
     val context = LocalContext.current
     val globalTheme by viewModel.globalTheme.collectAsState()
 
-    Scaffold(
-        topBar = {
+    val overscrollState = rememberRubberBandOverscrollState()
+    val nestedScrollConnection = rememberRubberBandNestedScrollConnection(overscrollState)
+    val flingBehavior = rememberFrictionFlingBehavior()
+
+    @OptIn(ExperimentalFoundationApi::class)
+    CompositionLocalProvider(
+        LocalOverscrollConfiguration provides null
+    ) {
+        Scaffold(
+            topBar = {
             TopAppBar(
                 title = {
                     Text(
@@ -92,22 +107,29 @@ fun GeneralSettingsScreen(
             )
         },
         containerColor = MaterialTheme.colorScheme.background,
-        modifier = modifier
+        modifier = modifier.nestedScroll(nestedScrollConnection)
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = padding.calculateTopPadding())
                 .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(
+                    state = rememberScrollState(),
+                    flingBehavior = flingBehavior
+                )
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
             // 1. Theme Configuration
-            SettingsSectionHeader(icon = Icons.Outlined.Settings, title = "Appearance")
+            Box(modifier = Modifier.rubberBandStretch(0, 4, overscrollState)) {
+                SettingsSectionHeader(icon = Icons.Outlined.Settings, title = "Appearance")
+            }
             Spacer(modifier = Modifier.height(2.dp))
             Column(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .rubberBandStretch(1, 4, overscrollState)
+                    .fillMaxWidth()
             ) {
                 listOf("SYSTEM" to "System Default", "LIGHT" to "Light", "DARK" to "Dark").forEach { (value, label) ->
                     val selected = globalTheme == value
@@ -141,95 +163,14 @@ fun GeneralSettingsScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 2. Gestures
-            SettingsSectionHeader(icon = Icons.Outlined.Lock, title = "Gestures")
-            Spacer(modifier = Modifier.height(2.dp))
-            val dpm = remember { context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager }
-            val adminComponent = remember { ComponentName("com.focuslauncher", "com.focuslauncher.FocusDeviceAdminReceiver") }
-            val doubleTapToLockEnabled by viewModel.doubleTapToLock.collectAsState()
-            
-            val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
-            androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
-                val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-                    if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                        val active = dpm.isAdminActive(adminComponent)
-                        if (active != doubleTapToLockEnabled) {
-                            viewModel.setDoubleTapToLockEnabled(active)
-                        }
-                    }
-                }
-                lifecycleOwner.lifecycle.addObserver(observer)
-                onDispose {
-                    lifecycleOwner.lifecycle.removeObserver(observer)
-                }
+            // 2. Default Launcher switcher
+            Box(modifier = Modifier.rubberBandStretch(2, 4, overscrollState)) {
+                SettingsSectionHeader(icon = Icons.Outlined.Home, title = "Default Launcher")
             }
-            
-            val toggleAction = { targetValue: Boolean ->
-                if (targetValue) {
-                    if (!dpm.isAdminActive(adminComponent)) {
-                        viewModel.setDoubleTapToLockEnabled(true)
-                        try {
-                            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
-                                putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
-                                putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Honey Launcher needs admin permission to lock the screen when you double-tap.")
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            viewModel.setDoubleTapToLockEnabled(false)
-                            android.widget.Toast.makeText(context, "Cannot request admin permission: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
-                        }
-                    } else {
-                        viewModel.setDoubleTapToLockEnabled(true)
-                    }
-                } else {
-                    viewModel.setDoubleTapToLockEnabled(false)
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { toggleAction(!doubleTapToLockEnabled) }
-                    .padding(horizontal = 4.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Double-Tap to Lock",
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.SansSerif,
-                        fontSize = 15.sp
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "Double-tap empty space on home screen to lock device",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontFamily = FontFamily.SansSerif,
-                        fontSize = 12.sp
-                    )
-                }
-                Switch(
-                    checked = doubleTapToLockEnabled,
-                    onCheckedChange = { toggleAction(it) },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.primary,
-                        checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                        uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 3. Default Launcher switcher
-            SettingsSectionHeader(icon = Icons.Outlined.Home, title = "Default Launcher")
             Spacer(modifier = Modifier.height(2.dp))
             Box(
                 modifier = Modifier
+                    .rubberBandStretch(3, 4, overscrollState)
                     .fillMaxWidth()
                     .clickable { openDefaultLauncherSettings(context) }
                     .padding(horizontal = 4.dp, vertical = 8.dp)
@@ -255,6 +196,7 @@ fun GeneralSettingsScreen(
             Spacer(modifier = Modifier.height(padding.calculateBottomPadding() + 16.dp))
         }
     }
+}
 }
 
 @Composable

@@ -28,6 +28,14 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalOverscrollConfiguration
+import androidx.compose.runtime.CompositionLocalProvider
+import com.focuslauncher.core.common.rememberRubberBandOverscrollState
+import com.focuslauncher.core.common.rememberRubberBandNestedScrollConnection
+import com.focuslauncher.core.common.rememberFrictionFlingBehavior
+import com.focuslauncher.core.common.rubberBandStretch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -94,8 +102,17 @@ fun ProfileEditScreen(
         else -> MaterialTheme.colorScheme.primary
     }
 
-    Scaffold(
-        topBar = {
+    val overscrollState = rememberRubberBandOverscrollState()
+    val nestedScrollConnection = rememberRubberBandNestedScrollConnection(overscrollState)
+    val flingBehavior = rememberFrictionFlingBehavior()
+    val totalItems = 5
+
+    @OptIn(ExperimentalFoundationApi::class)
+    CompositionLocalProvider(
+        LocalOverscrollConfiguration provides null
+    ) {
+        Scaffold(
+            topBar = {
             TopAppBar(
                 title = {}, // Clean top bar without text title
                 navigationIcon = {
@@ -122,20 +139,24 @@ fun ProfileEditScreen(
             )
         },
         containerColor = MaterialTheme.colorScheme.background, // Adapts to light/dark themes
-        modifier = modifier
+        modifier = modifier.nestedScroll(nestedScrollConnection)
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = padding.calculateTopPadding())
                 .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(
+                    state = rememberScrollState(),
+                    flingBehavior = flingBehavior
+                )
         ) {
             Spacer(modifier = Modifier.height(24.dp))
             
             // Recreated Top Look card with overlapping circular icon badge
             Box(
                 modifier = Modifier
+                    .rubberBandStretch(0, totalItems, overscrollState)
                     .fillMaxWidth()
                     .padding(top = 16.dp)
             ) {
@@ -205,181 +226,193 @@ fun ProfileEditScreen(
             Spacer(modifier = Modifier.height(28.dp))
 
             // Name Input Section
-            Text(
-                text = "Profile Name",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(horizontal = 4.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = profileName,
-                onValueChange = {
-                    profileName = it
-                    viewModel.updateProfileDraft { p -> p.copy(name = it) }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = accentColor,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+            Column(
+                modifier = Modifier.rubberBandStretch(1, totalItems, overscrollState)
+            ) {
+                Text(
+                    text = "Profile Name",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(horizontal = 4.dp)
                 )
-            )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = profileName,
+                    onValueChange = {
+                        profileName = it
+                        viewModel.updateProfileDraft { p -> p.copy(name = it) }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = accentColor,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // Allowed Apps Section
-            Text(
-                text = "Allowed Apps",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(horizontal = 4.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f))
-                    .clickable(onClick = onNavigateToAppSelector)
-                    .padding(20.dp)
+            Column(
+                modifier = Modifier.rubberBandStretch(2, totalItems, overscrollState)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Text(
+                    text = "Allowed Apps",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f))
+                        .clickable(onClick = onNavigateToAppSelector)
+                        .padding(20.dp)
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Select Focus Apps",
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "${allowedApps.size} apps whitelisted for this mode",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Select Focus Apps",
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "${allowedApps.size} apps whitelisted for this mode",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp)
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = "Edit Apps",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                         )
                     }
-                    Icon(
-                        imageVector = Icons.Default.ArrowForward,
-                        contentDescription = "Edit Apps",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // Wallpaper Selector Section
-            Text(
-                text = "Profile Wallpaper",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(horizontal = 4.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            Column(
+                modifier = Modifier.rubberBandStretch(3, totalItems, overscrollState)
             ) {
-                // Card 1: Default (System Wallpaper)
-                val isDefault = profile.wallpaperPath == null
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(110.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(if (isDefault) accentColor.copy(alpha = 0.08f) else Color.Transparent)
-                        .border(
-                            width = if (isDefault) 2.dp else 1.dp,
-                            color = if (isDefault) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(16.dp)
-                        )
-                        .clickable { viewModel.clearCustomWallpaper() }
-                        .padding(12.dp),
-                    contentAlignment = Alignment.Center
+                Text(
+                    text = "Profile Wallpaper",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Outlined.Home,
-                            contentDescription = "System Wallpaper",
-                            tint = if (isDefault) accentColor else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            "System Default",
-                            color = if (isDefault) accentColor else MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-
-                // Card 2: Custom Gallery Image
-                val isCustom = profile.wallpaperPath != null
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(110.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(if (isCustom) accentColor.copy(alpha = 0.08f) else Color.Transparent)
-                        .border(
-                            width = if (isCustom) 2.dp else 1.dp,
-                            color = if (isCustom) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(16.dp)
-                        )
-                        .clickable {
-                            photoPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    // Card 1: Default (System Wallpaper)
+                    val isDefault = profile.wallpaperPath == null
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(110.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (isDefault) accentColor.copy(alpha = 0.08f) else Color.Transparent)
+                            .border(
+                                width = if (isDefault) 2.dp else 1.dp,
+                                color = if (isDefault) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+                                shape = RoundedCornerShape(16.dp)
                             )
-                        }
-                        .padding(4.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isCustom && profile.wallpaperPath != null) {
-                        val bitmap = remember(profile.wallpaperPath) {
-                            try {
-                                BitmapFactory.decodeFile(profile.wallpaperPath)
-                            } catch (e: Exception) {
-                                null
-                            }
-                        }
-                        if (bitmap != null) {
-                            Image(
-                                bitmap = bitmap.asImageBitmap(),
-                                contentDescription = "Wallpaper Thumbnail",
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(12.dp)),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                    } else {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(12.dp)
-                        ) {
+                            .clickable { viewModel.clearCustomWallpaper() }
+                            .padding(12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
-                                imageVector = Icons.Outlined.Star,
-                                contentDescription = "Choose Image",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                imageVector = Icons.Outlined.Home,
+                                contentDescription = "System Wallpaper",
+                                tint = if (isDefault) accentColor else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                "Custom Image",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                "System Default",
+                                color = if (isDefault) accentColor else MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp
                             )
+                        }
+                    }
+
+                    // Card 2: Custom Gallery Image
+                    val isCustom = profile.wallpaperPath != null
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(110.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (isCustom) accentColor.copy(alpha = 0.08f) else Color.Transparent)
+                            .border(
+                                width = if (isCustom) 2.dp else 1.dp,
+                                color = if (isCustom) accentColor else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .clickable {
+                                photoPickerLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                )
+                            }
+                            .padding(4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isCustom && profile.wallpaperPath != null) {
+                            val bitmap = remember(profile.wallpaperPath) {
+                                try {
+                                    BitmapFactory.decodeFile(profile.wallpaperPath)
+                                } catch (e: Exception) {
+                                    null
+                                }
+                            }
+                            if (bitmap != null) {
+                                Image(
+                                    bitmap = bitmap.asImageBitmap(),
+                                    contentDescription = "Wallpaper Thumbnail",
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(12.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        } else {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Star,
+                                    contentDescription = "Choose Image",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    "Custom Image",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            }
                         }
                     }
                 }
@@ -389,35 +422,42 @@ fun ProfileEditScreen(
 
             // Delete Profile Button
             if (profile.id != 0L) {
-                Button(
-                    onClick = {
-                        viewModel.deleteProfile(profile)
-                        onBack()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    ),
-                    shape = RoundedCornerShape(16.dp),
+                Box(
                     modifier = Modifier
+                        .rubberBandStretch(4, totalItems, overscrollState)
                         .fillMaxWidth()
                 ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        "Delete Focus Profile",
-                        color = MaterialTheme.colorScheme.error,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Button(
+                        onClick = {
+                            viewModel.deleteProfile(profile)
+                            onBack()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Delete Focus Profile",
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
             
             Spacer(modifier = Modifier.height(padding.calculateBottomPadding() + 24.dp))
         }
     }
+}
 }
 
 @Composable

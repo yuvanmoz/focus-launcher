@@ -16,8 +16,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalOverscrollConfiguration
+import androidx.compose.runtime.CompositionLocalProvider
+import com.focuslauncher.core.common.rememberRubberBandOverscrollState
+import com.focuslauncher.core.common.rememberRubberBandNestedScrollConnection
+import com.focuslauncher.core.common.rememberFrictionFlingBehavior
+import com.focuslauncher.core.common.rubberBandStretch
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -69,125 +77,140 @@ fun SettingsScreen(
     val profiles by viewModel.profiles.collectAsState()
     val activeProfileId by viewModel.activeProfileId.collectAsState()
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Image(
-                        painter = painterResource(id = com.focuslauncher.core.common.R.drawable.app_logo),
-                        contentDescription = "Honey Launcher Logo",
-                        modifier = Modifier
-                            .padding(top = 12.dp)
-                            .size(36.dp)
+    val overscrollState = rememberRubberBandOverscrollState()
+    val nestedScrollConnection = rememberRubberBandNestedScrollConnection(overscrollState)
+    val flingBehavior = rememberFrictionFlingBehavior()
+    val totalItems = 1 + profiles.size + 1
+
+    @OptIn(ExperimentalFoundationApi::class)
+    CompositionLocalProvider(
+        LocalOverscrollConfiguration provides null
+    ) {
+        Scaffold(
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Image(
+                            painter = painterResource(id = com.focuslauncher.core.common.R.drawable.app_logo),
+                            contentDescription = "Honey Launcher Logo",
+                            modifier = Modifier
+                                .padding(top = 12.dp)
+                                .size(36.dp)
+                        )
+                    },
+                    actions = {
+                        IconButton(onClick = onNavigateToGeneralSettings) {
+                            Icon(
+                                imageVector = Icons.Outlined.Settings,
+                                contentDescription = "Settings"
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background
                     )
-                },
-                actions = {
-                    IconButton(onClick = onNavigateToGeneralSettings) {
-                        Icon(
-                            imageVector = Icons.Outlined.Settings,
-                            contentDescription = "Settings"
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.background,
+            modifier = modifier.nestedScroll(nestedScrollConnection)
+        ) { padding ->
+            LazyColumn(
+                contentPadding = PaddingValues(
+                    top = padding.calculateTopPadding(),
+                    bottom = padding.calculateBottomPadding() + 16.dp,
+                    start = 16.dp,
+                    end = 16.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                flingBehavior = flingBehavior,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Title header
+                item {
+                    Column(
+                        modifier = Modifier
+                            .rubberBandStretch(0, totalItems, overscrollState)
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Modes",
+                            style = MaterialTheme.typography.titleLarge.copy(fontSize = 24.sp),
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            textAlign = TextAlign.Center
                         )
                     }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-        modifier = modifier
-    ) { padding ->
-        LazyColumn(
-            contentPadding = PaddingValues(
-                top = padding.calculateTopPadding(),
-                bottom = padding.calculateBottomPadding() + 16.dp,
-                start = 16.dp,
-                end = 16.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // Title header
-            item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        "Modes",
-                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 24.sp),
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        textAlign = TextAlign.Center
-                    )
                 }
-            }
 
-            // Focus Profiles list
-            items(profiles, key = { it.id }) { profile ->
-                val isActive = profile.id == activeProfileId
-                ProfileRowItem(
-                    profile = profile,
-                    isActive = isActive,
-                    onClick = {
-                        viewModel.startEditingProfile(profile.id)
-                        onNavigateToEditProfile(profile.id)
-                    }
-                )
-            }
-
-            // Add Profile CTA
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            viewModel.startEditingProfile(-1L)
-                            onNavigateToEditProfile(-1L)
-                        }
-                        .padding(horizontal = 4.dp, vertical = 10.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+                // Focus Profiles list
+                itemsIndexed(profiles, key = { _, it -> it.id }) { index, profile ->
+                    val isActive = profile.id == activeProfileId
+                    Box(
+                        modifier = Modifier.rubberBandStretch(1 + index, totalItems, overscrollState)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(30.dp)
-                                .background(
-                                    color = MaterialTheme.colorScheme.primary,
-                                    shape = CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
+                        ProfileRowItem(
+                            profile = profile,
+                            isActive = isActive,
+                            onClick = {
+                                viewModel.startEditingProfile(profile.id)
+                                onNavigateToEditProfile(profile.id)
+                            }
+                        )
+                    }
+                }
+
+                // Add Profile CTA
+                item {
+                    Box(
+                        modifier = Modifier
+                            .rubberBandStretch(1 + profiles.size, totalItems, overscrollState)
+                            .fillMaxWidth()
+                            .clickable {
+                                viewModel.startEditingProfile(-1L)
+                                onNavigateToEditProfile(-1L)
+                            }
+                            .padding(horizontal = 4.dp, vertical = 10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Add Profile",
-                                tint = MaterialTheme.colorScheme.background,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "Add Focus Profile",
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                text = "Create a custom focus space",
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        shape = CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Add Profile",
+                                    tint = MaterialTheme.colorScheme.background,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Add Focus Profile",
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    text = "Create a custom focus space",
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp)
+                                )
+                            }
                         }
                     }
                 }
             }
-
-
         }
     }
 }

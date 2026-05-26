@@ -166,9 +166,6 @@ class MainActivity : ComponentActivity() {
                                 viewModel = launcherViewModel,
                                 onNavigateToSettings = {
                                     navController.navigate("settings")
-                                },
-                                onLockScreen = {
-                                    lockScreen()
                                 }
                             )
                         }
@@ -293,22 +290,5 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun lockScreen() {
-        try {
-            val dpm = getSystemService(android.content.Context.DEVICE_POLICY_SERVICE) as android.app.admin.DevicePolicyManager
-            val adminComponent = android.content.ComponentName(this, FocusDeviceAdminReceiver::class.java)
-            if (dpm.isAdminActive(adminComponent)) {
-                dpm.lockNow()
-            } else {
-                // Prompt the user to enable Device Admin
-                val intent = Intent(android.app.admin.DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
-                    putExtra(android.app.admin.DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
-                    putExtra(android.app.admin.DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Honey Launcher needs admin permission to lock the screen when you double-tap.")
-                }
-                startActivity(intent)
-            }
-        } catch (e: Exception) {
-            android.widget.Toast.makeText(this, "Failed to lock screen: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
-        }
-    }
+
 }

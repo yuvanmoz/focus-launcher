@@ -94,7 +94,6 @@ import androidx.compose.material3.TextButton
 fun HomeScreen(
     viewModel: LauncherViewModel,
     onNavigateToSettings: () -> Unit,
-    onLockScreen: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -103,7 +102,6 @@ fun HomeScreen(
     val blockedApp by viewModel.blockedApp.collectAsState()
     val activeProfileId by viewModel.activeProfileId.collectAsState()
     val dockApps by viewModel.dockApps.collectAsState()
-    val doubleTapToLockEnabled by viewModel.doubleTapToLock.collectAsState()
     
     var showUsagePrompt by remember { mutableStateOf(false) }
     var showNotificationPrompt by remember { mutableStateOf(false) }
@@ -187,28 +185,16 @@ fun HomeScreen(
                     val cellWidthPx = with(density) { cellWidth.toPx() }
                     val cellHeightPx = with(density) { cellHeight.toPx() }
 
-                    val currentDoubleTapToLockEnabled by rememberUpdatedState(doubleTapToLockEnabled)
                     val currentHomeApps by rememberUpdatedState(homeApps)
-                    val currentOnLockScreen by rememberUpdatedState(onLockScreen)
                     val currentOnNavigateToSettings by rememberUpdatedState(onNavigateToSettings)
 
-                    // Workspace canvas area to detect double tap to lock & long press gestures
+                    // Workspace canvas area to detect long press gestures
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(Color.Transparent)
                             .pointerInput(Unit) {
                                 detectTapGestures(
-                                    onDoubleTap = { offset ->
-                                        if (currentDoubleTapToLockEnabled) {
-                                            val cellX = (offset.x / cellWidthPx).toInt().coerceIn(0, cols - 1)
-                                            val cellY = (offset.y / cellHeightPx).toInt().coerceIn(0, rows - 1)
-                                            val app = currentHomeApps.find { it.item.cellX == cellX && it.item.cellY == cellY }
-                                            if (app == null) {
-                                                currentOnLockScreen()
-                                            }
-                                        }
-                                    },
                                     onLongPress = { offset ->
                                         val cellX = (offset.x / cellWidthPx).toInt().coerceIn(0, cols - 1)
                                         val cellY = (offset.y / cellHeightPx).toInt().coerceIn(0, rows - 1)
