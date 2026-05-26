@@ -56,6 +56,10 @@ interface ProfileRepository {
     val isFirstInstallFlow: Flow<Boolean>
     fun isFirstInstall(): Boolean
     suspend fun setFirstInstallComplete()
+    
+    val dockAppsOrderFlow: Flow<List<String>>
+    fun getDockAppsOrder(): List<String>
+    suspend fun setDockAppsOrder(order: List<String>)
 }
 
 class ProfileRepositoryImpl(
@@ -97,6 +101,21 @@ class ProfileRepositoryImpl(
     override suspend fun setFirstInstallComplete() {
         sharedPrefs.edit().putBoolean("is_first_install", false).apply()
         _isFirstInstall.value = false
+    }
+
+    private val _dockAppsOrder = MutableStateFlow(
+        sharedPrefs.getString("dock_apps_order", "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
+    )
+    override val dockAppsOrderFlow: Flow<List<String>> = _dockAppsOrder.asStateFlow()
+
+    override fun getDockAppsOrder(): List<String> {
+        return _dockAppsOrder.value
+    }
+
+    override suspend fun setDockAppsOrder(order: List<String>) {
+        val orderString = order.joinToString(",")
+        sharedPrefs.edit().putString("dock_apps_order", orderString).apply()
+        _dockAppsOrder.value = order
     }
 
 

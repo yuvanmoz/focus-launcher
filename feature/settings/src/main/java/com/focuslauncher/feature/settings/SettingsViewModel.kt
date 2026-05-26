@@ -162,7 +162,7 @@ class SettingsViewModel(
         }
     }
 
-    fun toggleAppAllowed(appId: String) {
+    fun toggleAppAllowed(appId: String): Boolean {
         val currentAllowed = _allowedApps.value.toMutableSet()
         val currentHome = _homeApps.value.toMutableSet()
         val currentPositions = _homeAppPositions.value.toMutableMap()
@@ -172,6 +172,9 @@ class SettingsViewModel(
             currentHome.remove(appId)
             currentPositions.remove(appId)
         } else {
+            if (currentAllowed.size >= 30) {
+                return false
+            }
             currentAllowed.add(appId)
             currentHome.add(appId)
             val occupied = currentPositions.values.toSet()
@@ -206,6 +209,7 @@ class SettingsViewModel(
                 profileRepository.updateHomeScreenItems(id, homeItems)
             }
         }
+        return true
     }
 
     private fun findFirstAvailableCell(occupied: Set<Pair<Int, Int>>): Pair<Int, Int> {

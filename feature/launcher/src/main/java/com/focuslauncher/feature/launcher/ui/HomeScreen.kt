@@ -44,6 +44,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -129,6 +133,11 @@ fun HomeScreen(
     // Drag and drop states
     var draggingApp by remember { mutableStateOf<HomeScreenApp?>(null) }
     var dragPosition by remember { mutableStateOf(Offset.Zero) }
+
+    // Dock dragging states
+    var draggingDockApp by remember { mutableStateOf<com.focuslauncher.core.model.AppMetadata?>(null) }
+    var dockDragDeltaX by remember { mutableStateOf(0f) }
+    val dockItemCenters = remember { mutableStateMapOf<String, Float>() }
 
     val dragScale by animateFloatAsState(
         targetValue = if (draggingApp != null) 1.2f else 1.0f,
@@ -388,14 +397,83 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         dockApps.forEach { dockApp ->
-                            AppIconItem(
-                                app = dockApp,
-                                viewModel = viewModel,
-                                onClick = {
-                                    viewModel.launchApp(context, dockApp)
-                                },
-                                showLabel = false
-                            )
+                            key(dockApp.uniqueId) {
+                                val isThisDragging = draggingDockApp?.uniqueId == dockApp.uniqueId
+                                Box(
+                                    modifier = Modifier
+                                        .onGloballyPositioned { layoutCoordinates ->
+                                            val position = layoutCoordinates.positionInParent()
+                                            val center = position.x + layoutCoordinates.size.width / 2f
+                                            dockItemCenters[dockApp.uniqueId] = center
+                                        }
+                                        .graphicsLayer {
+                                            if (isThisDragging) {
+                                                translationX = dockDragDeltaX
+                                                scaleX = 1.15f
+                                                scaleY = 1.15f
+                                                shadowElevation = 8.dp.toPx()
+                                            }
+                                        }
+                                        .pointerInput(dockApp) {
+                                            detectDragGesturesAfterLongPress(
+                                                onDragStart = { _ ->
+                                                    draggingDockApp = dockApp
+                                                    dockDragDeltaX = 0f
+                                                },
+                                                onDrag = { change, dragAmount ->
+                                                    change.consume()
+                                                    dockDragDeltaX += dragAmount.x
+
+                                                    // Live swap check
+                                                    val currentList = dockApps
+                                                    val currentIndex = currentList.indexOf(dockApp)
+                                                    if (currentIndex != -1) {
+                                                        val currentCenter = (dockItemCenters[dockApp.uniqueId] ?: 0f) + dockDragDeltaX
+                                                        var targetIndex = currentIndex
+                                                        for (i in currentList.indices) {
+                                                            if (i == currentIndex) continue
+                                                            val otherApp = currentList[i]
+                                                            val otherCenter = dockItemCenters[otherApp.uniqueId] ?: 0f
+                                                            if (i < currentIndex && currentCenter < otherCenter) {
+                                                                targetIndex = i
+                                                                break
+                                                            } else if (i > currentIndex && currentCenter > otherCenter) {
+                                                                targetIndex = i
+                                                            }
+                                                        }
+                                                        if (targetIndex != currentIndex) {
+                                                            val targetApp = currentList[targetIndex]
+                                                            val targetCenter = dockItemCenters[targetApp.uniqueId] ?: 0f
+                                                            val currentOrigCenter = dockItemCenters[dockApp.uniqueId] ?: 0f
+                                                            viewModel.moveDockApp(currentIndex, targetIndex)
+                                                            dockDragDeltaX -= (targetCenter - currentOrigCenter)
+                                                        }
+                                                    }
+                                                },
+                                                onDragEnd = {
+                                                    draggingDockApp = null
+                                                    dockDragDeltaX = 0f
+                                                },
+                                                onDragCancel = {
+                                                    draggingDockApp = null
+                                                    dockDragDeltaX = 0f
+                                                }
+                                            )
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    AppIconItem(
+                                        app = dockApp,
+                                        viewModel = viewModel,
+                                        onClick = {
+                                            if (draggingDockApp == null) {
+                                                viewModel.launchApp(context, dockApp)
+                                            }
+                                        },
+                                        showLabel = false
+                                    )
+                                }
+                            }
                         }
                     }
                 }

@@ -88,8 +88,11 @@ class LauncherViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    // Dynamic resolution of One UI Dock applications (Phone, Messages, Calendar, Contacts)
-    val dockApps: StateFlow<List<AppMetadata>> = installedApps.flatMapLatest { apps ->
+    // Dynamic resolution of One UI Dock applications (Phone, Messages, Calendar, Contacts), supporting custom ordering
+    val dockApps: StateFlow<List<AppMetadata>> = combine(
+        installedApps,
+        profileRepository.dockAppsOrderFlow
+    ) { apps, savedOrder ->
         val resolved = mutableListOf<AppMetadata>()
         val pm = context.packageManager
 
@@ -123,8 +126,36 @@ class LauncherViewModel(
             ?: apps.find { it.packageName.contains("contacts", ignoreCase = true) }
         contactsApp?.let { resolved.add(it) }
 
-        flowOf(resolved.distinctBy { it.uniqueId })
+        val distinctDefault = resolved.distinctBy { it.uniqueId }
+
+        if (savedOrder.isEmpty()) {
+            distinctDefault
+        } else {
+            val orderedList = mutableListOf<AppMetadata>()
+            savedOrder.forEach { pkg ->
+                distinctDefault.find { it.packageName == pkg }?.let {
+                    orderedList.add(it)
+                }
+            }
+            distinctDefault.forEach { app ->
+                if (!orderedList.any { it.packageName == app.packageName }) {
+                    orderedList.add(app)
+                }
+            }
+            orderedList
+        }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    fun moveDockApp(fromIndex: Int, toIndex: Int) {
+        viewModelScope.launch {
+            val current = dockApps.value.toMutableList()
+            if (fromIndex in current.indices && toIndex in current.indices) {
+                val item = current.removeAt(fromIndex)
+                current.add(toIndex, item)
+                profileRepository.setDockAppsOrder(current.map { it.packageName })
+            }
+        }
+    }
 
     fun selectProfile(profileId: Long) {
         viewModelScope.launch {

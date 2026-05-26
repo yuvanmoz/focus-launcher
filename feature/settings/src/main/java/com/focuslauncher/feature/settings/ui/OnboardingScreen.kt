@@ -183,10 +183,10 @@ fun OnboardingScreen(
                     brush = Brush.radialGradient(
                         colors = listOf(blueColor, Color.Transparent),
                         center = Offset(size.width * blueX, size.height * blueY),
-                        radius = size.width * 0.9f
+                        radius = size.width * 0.45f
                     ),
                     center = Offset(size.width * blueX, size.height * blueY),
-                    radius = size.width * 0.9f
+                    radius = size.width * 0.45f
                 )
 
                 // 3. Draw Soft Violet blob
@@ -194,10 +194,10 @@ fun OnboardingScreen(
                     brush = Brush.radialGradient(
                         colors = listOf(violetColor, Color.Transparent),
                         center = Offset(size.width * violetX, size.height * violetY),
-                        radius = size.width * 0.9f
+                        radius = size.width * 0.45f
                     ),
                     center = Offset(size.width * violetX, size.height * violetY),
-                    radius = size.width * 0.9f
+                    radius = size.width * 0.45f
                 )
 
                 // 4. Draw Gentle Pink blob
@@ -205,10 +205,10 @@ fun OnboardingScreen(
                     brush = Brush.radialGradient(
                         colors = listOf(pinkColor, Color.Transparent),
                         center = Offset(size.width * pinkX, size.height * pinkY),
-                        radius = size.width * 0.9f
+                        radius = size.width * 0.45f
                     ),
                     center = Offset(size.width * pinkX, size.height * pinkY),
-                    radius = size.width * 0.9f
+                    radius = size.width * 0.45f
                 )
             }
             .statusBarsPadding()
@@ -274,19 +274,20 @@ fun OnboardingScreen(
                             }
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White.copy(alpha = 0.1f),
+                            containerColor = Color(0xFF2979FF),
                             contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(24.dp),
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .width(240.dp)
                             .height(48.dp)
                     ) {
                         Text(
                             text = "Next",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.SansSerif
+                            fontFamily = FontFamily.SansSerif,
+                            color = Color.White
                         )
                     }
                 } else {
@@ -313,21 +314,22 @@ fun OnboardingScreen(
                             }
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = Color.Black,
-                            disabledContainerColor = Color.White.copy(alpha = 0.2f),
+                            containerColor = Color(0xFF2979FF),
+                            contentColor = Color.White,
+                            disabledContainerColor = Color(0xFF2979FF).copy(alpha = 0.2f),
                             disabledContentColor = Color.White.copy(alpha = 0.4f)
                         ),
                         shape = RoundedCornerShape(24.dp),
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .width(240.dp)
                             .height(48.dp)
                     ) {
                         Text(
                             text = if (allGranted) "Get Started" else "Grant Access & Start",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.SansSerif
+                            fontFamily = FontFamily.SansSerif,
+                            color = Color.White
                         )
                     }
                 }
@@ -366,7 +368,7 @@ fun OnboardingPage1() {
         Text(
             text = "Focus & Zero Distraction.",
             fontSize = 16.sp,
-            color = Color.White.copy(alpha = 0.7f),
+            color = Color.White,
             fontFamily = FontFamily.SansSerif,
             textAlign = TextAlign.Center
         )
@@ -411,7 +413,7 @@ fun OnboardingPage2() {
                     .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text("S", color = Color.White.copy(alpha = 0.6f), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text("S", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
             // Divider
             Box(
@@ -427,7 +429,7 @@ fun OnboardingPage2() {
                     .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text("P", color = Color.White.copy(alpha = 0.6f), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text("P", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
         }
 
@@ -445,7 +447,7 @@ fun OnboardingPage2() {
         Text(
             text = "Your phone shapes itself around your day. Lock into a custom profile and eliminate temptation.",
             fontSize = 15.sp,
-            color = Color.Gray,
+            color = Color.White,
             fontFamily = FontFamily.SansSerif,
             textAlign = TextAlign.Center,
             lineHeight = 22.sp
@@ -478,7 +480,7 @@ fun OnboardingPage3(
         Text(
             text = "To suppress background distractions and hold notifications, Honey Launcher requires system clearance.",
             fontSize = 15.sp,
-            color = Color.Gray,
+            color = Color.White,
             fontFamily = FontFamily.SansSerif,
             textAlign = TextAlign.Center,
             lineHeight = 22.sp
@@ -572,7 +574,7 @@ fun PermissionGuideCardCompact(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = description,
-                    color = Color.Gray,
+                    color = Color.White,
                     fontFamily = FontFamily.SansSerif,
                     fontSize = 11.sp,
                     lineHeight = 14.sp

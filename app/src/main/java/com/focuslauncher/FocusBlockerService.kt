@@ -54,7 +54,42 @@ class FocusBlockerService : Service() {
             "com.google.android.permissioncontroller",
             "com.samsung.android.permissioncontroller",
             "com.android.packageinstaller",
-            "com.google.android.packageinstaller"
+            "com.google.android.packageinstaller",
+            // Telephony & Call handling (In-Call UI, Telecom, etc.)
+            "com.android.phone",
+            "com.android.server.telecom",
+            "com.android.incallui",
+            "com.google.android.dialer",
+            "com.samsung.android.incallui",
+            "com.samsung.android.dialer",
+            "com.sec.android.app.dialer",
+            "com.samsung.android.app.telephonyui",
+            "com.android.providers.telephony",
+            "com.google.android.ims",
+            "com.samsung.ims.android",
+            "com.oneplus.dialer",
+            "com.oppo.dialer",
+            "com.coloros.phonemanager",
+            "com.vivo.dialer",
+            "com.xiaomi.phone",
+            // Contacts subfunctions & sync
+            "com.samsung.android.contacts",
+            "com.google.android.contacts",
+            "com.android.contacts",
+            "com.android.providers.contacts",
+            "com.oneplus.contacts",
+            "com.oppo.contacts",
+            "com.vivo.contacts",
+            // SMS & Messaging subfunctions
+            "com.samsung.android.messaging",
+            "com.google.android.apps.messaging",
+            "com.android.mms",
+            "com.android.messaging",
+            // Calendar subfunctions & sync
+            "com.samsung.android.calendar",
+            "com.google.android.calendar",
+            "com.android.calendar",
+            "com.android.providers.calendar"
         )
         
         val pm = context.packageManager
@@ -93,6 +128,30 @@ class FocusBlockerService : Service() {
             val contactsIntent = Intent(Intent.ACTION_VIEW, android.provider.ContactsContract.Contacts.CONTENT_URI)
             val info = pm.resolveActivity(contactsIntent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
             info?.activityInfo?.packageName?.let { packages.add(it) }
+        } catch (e: Exception) {}
+
+        // Dynamically whitelist all system packages related to phone, calls, contacts, messaging, calendar
+        try {
+            val systemApps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+            for (appInfo in systemApps) {
+                val isSystem = (appInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0 ||
+                               (appInfo.flags and android.content.pm.ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+                if (isSystem) {
+                    val pkgName = appInfo.packageName
+                    if (pkgName.contains("dialer", ignoreCase = true) ||
+                        pkgName.contains("phone", ignoreCase = true) ||
+                        pkgName.contains("telephony", ignoreCase = true) ||
+                        pkgName.contains("incallui", ignoreCase = true) ||
+                        pkgName.contains("contacts", ignoreCase = true) ||
+                        pkgName.contains("messaging", ignoreCase = true) ||
+                        pkgName.contains("mms", ignoreCase = true) ||
+                        pkgName.contains("calendar", ignoreCase = true) ||
+                        pkgName.contains("ims", ignoreCase = true)
+                    ) {
+                        packages.add(pkgName)
+                    }
+                }
+            }
         } catch (e: Exception) {}
         
         return packages

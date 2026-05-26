@@ -328,7 +328,14 @@ fun AppSelectorScreen(
                                 viewModel = viewModel,
                                 onClick = {
                                     if (!isEssential) {
-                                        viewModel.toggleAppAllowed(app.uniqueId)
+                                        val success = viewModel.toggleAppAllowed(app.uniqueId)
+                                        if (!success) {
+                                            android.widget.Toast.makeText(
+                                                context,
+                                                "Only up to 30 apps can be added to the home screen.",
+                                                android.widget.Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
                                     }
                                 }
                             )
