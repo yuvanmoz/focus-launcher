@@ -1,5 +1,7 @@
 package com.focuslauncher.feature.launcher.ui
 
+import android.app.Activity
+import android.content.Intent
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
@@ -21,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import com.focuslauncher.feature.launcher.LauncherViewModel
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalOverscrollConfiguration
@@ -60,6 +63,7 @@ data class WidgetProviderEntry(
 
 @Composable
 fun WidgetPickerSheet(
+    viewModel: LauncherViewModel,
     appWidgetHost: AppWidgetHost,
     allowedPackages: Set<String>,
     onWidgetSelected: (appWidgetId: Int, provider: ComponentName, spanX: Int, spanY: Int) -> Unit,
@@ -288,26 +292,23 @@ fun WidgetPickerSheet(
                                                             entry.minSpanY
                                                         )
                                                     } else {
-                                                        // System will show permission dialog
-                                                        // For now, deallocate and show error state
-                                                        // In a production app, you'd launch the bind intent
-                                                        appWidgetHost.deleteAppWidgetId(appWidgetId)
-                                                        // Try again — the system may grant after first attempt
-                                                        val retryId = appWidgetHost.allocateAppWidgetId()
-                                                        val retryBound = appWidgetManager.bindAppWidgetIdIfAllowed(
-                                                            retryId,
-                                                            provider
+                                                        // Launch the system permission activity to grant widget binding permission
+                                                        viewModel.pendingWidgetToAdd = LauncherViewModel.PendingWidget(
+                                                            appWidgetId = appWidgetId,
+                                                            provider = provider,
+                                                            spanX = entry.minSpanX,
+                                                            spanY = entry.minSpanY
                                                         )
-                                                        if (retryBound) {
-                                                            onWidgetSelected(
-                                                                retryId,
-                                                                provider,
-                                                                entry.minSpanX,
-                                                                entry.minSpanY
-                                                            )
-                                                        } else {
-                                                            appWidgetHost.deleteAppWidgetId(retryId)
+                                                        val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_BIND).apply {
+                                                            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                                                            putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, provider)
                                                         }
+                                                        try {
+                                                            (context as? Activity)?.startActivityForResult(intent, 1002)
+                                                        } catch (e: Exception) {
+                                                            e.printStackTrace()
+                                                        }
+                                                        onDismiss()
                                                     }
                                                 }
                                             )

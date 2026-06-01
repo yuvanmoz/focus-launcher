@@ -1,6 +1,8 @@
 package com.focuslauncher.core.common.theme
 
 import android.app.Activity
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -42,7 +44,31 @@ fun FocusLauncherTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val targetColorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    
+    val primary = animateColorAsState(targetColorScheme.primary, animationSpec = tween(400), label = "primary").value
+    val secondary = animateColorAsState(targetColorScheme.secondary, animationSpec = tween(400), label = "secondary").value
+    val background = animateColorAsState(targetColorScheme.background, animationSpec = tween(400), label = "background").value
+    val surface = animateColorAsState(targetColorScheme.surface, animationSpec = tween(400), label = "surface").value
+    val surfaceVariant = animateColorAsState(targetColorScheme.surfaceVariant, animationSpec = tween(400), label = "surfaceVariant").value
+    val onPrimary = animateColorAsState(targetColorScheme.onPrimary, animationSpec = tween(400), label = "onPrimary").value
+    val onSecondary = animateColorAsState(targetColorScheme.onSecondary, animationSpec = tween(400), label = "onSecondary").value
+    val onBackground = animateColorAsState(targetColorScheme.onBackground, animationSpec = tween(400), label = "onBackground").value
+    val onSurface = animateColorAsState(targetColorScheme.onSurface, animationSpec = tween(400), label = "onSurface").value
+    val onSurfaceVariant = animateColorAsState(targetColorScheme.onSurfaceVariant, animationSpec = tween(400), label = "onSurfaceVariant").value
+
+    val colorScheme = targetColorScheme.copy(
+        primary = primary,
+        secondary = secondary,
+        background = background,
+        surface = surface,
+        surfaceVariant = surfaceVariant,
+        onPrimary = onPrimary,
+        onSecondary = onSecondary,
+        onBackground = onBackground,
+        onSurface = onSurface,
+        onSurfaceVariant = onSurfaceVariant
+    )
     
     val view = LocalView.current
     if (!view.isInEditMode) {

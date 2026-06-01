@@ -44,13 +44,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 import android.appwidget.AppWidgetHost
+import android.appwidget.AppWidgetManager
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var appWidgetHost: AppWidgetHost
+    private lateinit var launcherViewModel: LauncherViewModel
+    private lateinit var settingsViewModel: SettingsViewModel
 
     companion object {
         private const val APPWIDGET_HOST_ID = 1024
+        private const val REQUEST_BIND_APPWIDGET = 1025
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,12 +91,12 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        // Instantiate ViewModels at Activity scope
+        launcherViewModel = ViewModelProvider(this, launcherViewModelFactory)[LauncherViewModel::class.java]
+        settingsViewModel = ViewModelProvider(this, settingsViewModelFactory)[SettingsViewModel::class.java]
+
         setContent {
             val navController = rememberNavController()
-            
-            // Instantiating ViewModels at Activity scope to share edit drafts
-            val launcherViewModel = ViewModelProvider(this, launcherViewModelFactory)[LauncherViewModel::class.java]
-            val settingsViewModel = ViewModelProvider(this, settingsViewModelFactory)[SettingsViewModel::class.java]
 
             val globalTheme by settingsViewModel.globalTheme.collectAsState()
             val activeProfileId by settingsViewModel.activeProfileId.collectAsState()
@@ -108,7 +112,7 @@ class MainActivity : ComponentActivity() {
             }
 
             androidx.compose.runtime.LaunchedEffect(activeProfileId) {
-                if (activeProfileId != -99L && navController.currentDestination?.route != "launcher") {
+                if (!settingsViewModel.isFirstInstall() && activeProfileId != -99L && navController.currentDestination?.route != "launcher") {
                     navController.navigate("launcher") {
                         popUpTo("launcher") { inclusive = true }
                     }
@@ -318,6 +322,31 @@ class MainActivity : ComponentActivity() {
             appWidgetHost.stopListening()
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 1002) {
+            val pending = launcherViewModel.pendingWidgetToAdd
+            if (resultCode == RESULT_OK && pending != null) {
+                launcherViewModel.addWidget(
+                    appWidgetId = pending.appWidgetId,
+                    provider = pending.provider,
+                    cellX = 0,
+                    cellY = 0,
+                    spanX = pending.spanX,
+                    spanY = pending.spanY
+                )
+            } else if (pending != null) {
+                // User cancelled or binding failed, clean up allocated ID
+                try {
+                    appWidgetHost.deleteAppWidgetId(pending.appWidgetId)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            launcherViewModel.pendingWidgetToAdd = null
         }
     }
 }

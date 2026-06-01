@@ -93,15 +93,17 @@ class FocusApplication : Application() {
             // Stop the background app blocker service
             stopService(Intent(this, FocusBlockerService::class.java))
             
-            // Force go to Home (reverts to system/Samsung launcher)
-            val homeIntent = Intent(Intent.ACTION_MAIN).apply {
-                addCategory(Intent.CATEGORY_HOME)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            try {
-                startActivity(homeIntent)
-            } catch (e: Exception) {
-                // Ignore if activity cannot be started (e.g. during early boot)
+            // Force go to Home (reverts to system/Samsung launcher) ONLY if we are currently default launcher
+            if (isDefaultLauncher()) {
+                val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_HOME)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                try {
+                    startActivity(homeIntent)
+                } catch (e: Exception) {
+                    // Ignore if activity cannot be started (e.g. during early boot)
+                }
             }
             
         } else {

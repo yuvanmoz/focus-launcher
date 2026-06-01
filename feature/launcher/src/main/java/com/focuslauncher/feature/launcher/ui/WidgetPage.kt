@@ -338,6 +338,7 @@ fun WidgetPage(
     // Widget picker bottom sheet
     if (showWidgetPicker) {
         WidgetPickerSheet(
+            viewModel = viewModel,
             appWidgetHost = appWidgetHost,
             allowedPackages = allowedPackages,
             onWidgetSelected = { appWidgetId, provider, spanX, spanY ->

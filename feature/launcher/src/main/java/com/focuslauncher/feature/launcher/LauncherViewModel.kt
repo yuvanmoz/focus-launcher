@@ -255,4 +255,13 @@ class LauncherViewModel(
     fun dismissBlockPopup() {
         profileRepository.setBlockedApp(null)
     }
+
+    var pendingWidgetToAdd: PendingWidget? = null
+
+    data class PendingWidget(
+        val appWidgetId: Int,
+        val provider: ComponentName,
+        val spanX: Int,
+        val spanY: Int
+    )
 }

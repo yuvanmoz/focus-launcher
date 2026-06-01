@@ -11,6 +11,9 @@ import androidx.compose.foundation.gestures.ScrollScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
@@ -72,30 +75,44 @@ fun rememberFrictionFlingBehavior(frictionMultiplier: Float = 0.75f): FlingBehav
 class RubberBandOverscrollState(
     val coroutineScope: CoroutineScope
 ) {
-    val overscrollAmount = Animatable(0f)
+    var overscrollAmount by mutableFloatStateOf(0f)
+        private set
+
+    private val animatable = Animatable(0f)
 
     fun onScroll(availableY: Float): Float {
-        val current = overscrollAmount.value
-        // Apply dampening resistance
+        val current = overscrollAmount
         val resistance = 0.35f
         val delta = availableY * resistance
-        val target = current + delta
-        
-        coroutineScope.launch {
-            overscrollAmount.snapTo(target)
-        }
+        overscrollAmount = current + delta
         return availableY
     }
 
     fun release() {
         coroutineScope.launch {
-            overscrollAmount.animateTo(
+            animatable.snapTo(overscrollAmount)
+            animatable.animateTo(
                 targetValue = 0f,
                 animationSpec = spring(
                     dampingRatio = 0.6f, // Bouncy/Elastic snap-back
                     stiffness = 200f    // Natural deceleration speed
                 )
-            )
+            ) {
+                overscrollAmount = value
+            }
+        }
+    }
+
+    fun absorbFling(target: Float) {
+        coroutineScope.launch {
+            animatable.snapTo(overscrollAmount)
+            animatable.animateTo(
+                targetValue = target,
+                animationSpec = spring(stiffness = 300f)
+            ) {
+                overscrollAmount = value
+            }
+            release()
         }
     }
 }
@@ -113,22 +130,18 @@ class RubberBandNestedScrollConnection(
     val state: RubberBandOverscrollState
 ) : NestedScrollConnection {
     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-        val overscroll = state.overscrollAmount.value
+        val overscroll = state.overscrollAmount
         if (overscroll == 0f) return Offset.Zero
 
         val deltaY = available.y
         // If scrolling in the opposite direction of overscroll, reduce overscroll
         if (overscroll > 0f && deltaY < 0f) {
             val newOverscroll = (overscroll + deltaY).coerceAtLeast(0f)
-            state.coroutineScope.launch {
-                state.overscrollAmount.snapTo(newOverscroll)
-            }
+            state.onScroll(newOverscroll - overscroll)
             return Offset(0f, deltaY)
         } else if (overscroll < 0f && deltaY > 0f) {
             val newOverscroll = (overscroll + deltaY).coerceAtMost(0f)
-            state.coroutineScope.launch {
-                state.overscrollAmount.snapTo(newOverscroll)
-            }
+            state.onScroll(newOverscroll - overscroll)
             return Offset(0f, deltaY)
         }
         return Offset.Zero
@@ -159,13 +172,7 @@ class RubberBandNestedScrollConnection(
         if (abs(velocityY) > 100f) {
             // Absorb remaining fling speed into rubber stretch, then rebound
             val targetOverscroll = (velocityY * 0.05f).coerceIn(-180f, 180f)
-            state.coroutineScope.launch {
-                state.overscrollAmount.animateTo(
-                    targetValue = targetOverscroll,
-                    animationSpec = spring(stiffness = 300f)
-                )
-                state.release()
-            }
+            state.absorbFling(targetOverscroll)
             return available
         }
         state.release()
@@ -187,7 +194,7 @@ fun Modifier.rubberBandStretch(
     state: RubberBandOverscrollState,
     horizontal: Boolean = false
 ): Modifier = this.graphicsLayer {
-    val overscroll = state.overscrollAmount.value
+    val overscroll = state.overscrollAmount
     if (overscroll == 0f || totalItems <= 1) return@graphicsLayer
     
     if (horizontal) {
