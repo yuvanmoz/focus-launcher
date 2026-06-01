@@ -20,7 +20,68 @@ import java.util.concurrent.ConcurrentLinkedQueue
 class FocusNotificationListenerService : NotificationListenerService() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val suppressedQueue = ConcurrentLinkedQueue<SuppressedNotification>()
+    private val saveLock = Any()
+
+    private fun saveSuppressedNotifications(list: List<SuppressedNotification>) {
+        try {
+            val array = org.json.JSONArray()
+            list.forEach { item ->
+                val obj = org.json.JSONObject().apply {
+                    put("packageName", item.packageName)
+                    put("appName", item.appName)
+                    put("title", item.title ?: "")
+                    put("text", item.text ?: "")
+                    put("whenMs", item.whenMs)
+                }
+                array.put(obj)
+            }
+            val sharedPrefs = getSharedPreferences("suppressed_notifications_prefs", Context.MODE_PRIVATE)
+            sharedPrefs.edit().putString("suppressed_list", array.toString()).commit()
+        } catch (e: java.lang.Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun loadSuppressedNotifications(): List<SuppressedNotification> {
+        val result = mutableListOf<SuppressedNotification>()
+        try {
+            val sharedPrefs = getSharedPreferences("suppressed_notifications_prefs", Context.MODE_PRIVATE)
+            val jsonStr = sharedPrefs.getString("suppressed_list", null) ?: return emptyList()
+            val array = org.json.JSONArray(jsonStr)
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                result.add(
+                    SuppressedNotification(
+                        packageName = obj.getString("packageName"),
+                        appName = obj.getString("appName"),
+                        title = obj.optString("title").takeIf { it.isNotEmpty() },
+                        text = obj.optString("text").takeIf { it.isNotEmpty() },
+                        whenMs = obj.getLong("whenMs")
+                    )
+                )
+            }
+        } catch (e: java.lang.Exception) {
+            e.printStackTrace()
+        }
+        return result
+    }
+
+    private fun addSuppressedNotification(suppressed: SuppressedNotification) {
+        synchronized(saveLock) {
+            val list = loadSuppressedNotifications().toMutableList()
+            list.add(suppressed)
+            saveSuppressedNotifications(list)
+        }
+    }
+
+    private fun popAllSuppressedNotifications(): List<SuppressedNotification> {
+        synchronized(saveLock) {
+            val list = loadSuppressedNotifications()
+            val sharedPrefs = getSharedPreferences("suppressed_notifications_prefs", Context.MODE_PRIVATE)
+            sharedPrefs.edit().remove("suppressed_list").commit()
+            return list
+        }
+    }
     
     private var activeProfileId: Long = -99L
 
@@ -116,7 +177,7 @@ class FocusNotificationListenerService : NotificationListenerService() {
                     text = text,
                     whenMs = sbn.postTime
                 )
-                suppressedQueue.add(suppressed)
+                addSuppressedNotification(suppressed)
 
                 cancelNotification(sbn.key)
             }
@@ -124,7 +185,8 @@ class FocusNotificationListenerService : NotificationListenerService() {
     }
 
     private fun flushSuppressedNotifications() {
-        if (suppressedQueue.isEmpty()) return
+        val suppressedList = popAllSuppressedNotifications()
+        if (suppressedList.isEmpty()) return
         
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
         
@@ -140,9 +202,7 @@ class FocusNotificationListenerService : NotificationListenerService() {
         }
 
         var id = 1000
-        while (!suppressedQueue.isEmpty()) {
-            val suppressed = suppressedQueue.poll() ?: break
-            
+        suppressedList.forEach { suppressed ->
             val titleText = if (suppressed.title.isNullOrEmpty()) {
                 suppressed.appName
             } else {
