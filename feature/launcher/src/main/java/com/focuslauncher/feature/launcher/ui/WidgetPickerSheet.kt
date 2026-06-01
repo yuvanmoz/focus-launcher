@@ -9,6 +9,7 @@ import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,6 +39,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -72,6 +76,7 @@ fun WidgetPickerSheet(
     val context = LocalContext.current
     val appWidgetManager = remember { AppWidgetManager.getInstance(context) }
     val pm = context.packageManager
+    var showSizeSelectionForEntry by remember { mutableStateOf<WidgetProviderEntry?>(null) }
 
     // Compute approximate cell size for span calculation (assuming 5 cols, ~360dp width)
     val approxCellWidthDp = 72 // ~360dp / 5
@@ -275,41 +280,7 @@ fun WidgetPickerSheet(
                                             WidgetPickerItem(
                                                 entry = entry,
                                                 onClick = {
-                                                    // Allocate widget ID and attempt to bind
-                                                    val appWidgetId = appWidgetHost.allocateAppWidgetId()
-                                                    val provider = entry.info.provider
-
-                                                    val bound = appWidgetManager.bindAppWidgetIdIfAllowed(
-                                                        appWidgetId,
-                                                        provider
-                                                    )
-
-                                                    if (bound) {
-                                                        onWidgetSelected(
-                                                            appWidgetId,
-                                                            provider,
-                                                            entry.minSpanX,
-                                                            entry.minSpanY
-                                                        )
-                                                    } else {
-                                                        // Launch the system permission activity to grant widget binding permission
-                                                        viewModel.pendingWidgetToAdd = LauncherViewModel.PendingWidget(
-                                                            appWidgetId = appWidgetId,
-                                                            provider = provider,
-                                                            spanX = entry.minSpanX,
-                                                            spanY = entry.minSpanY
-                                                        )
-                                                        val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_BIND).apply {
-                                                            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-                                                            putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, provider)
-                                                        }
-                                                        try {
-                                                            (context as? Activity)?.startActivityForResult(intent, 1002)
-                                                        } catch (e: Exception) {
-                                                            e.printStackTrace()
-                                                        }
-                                                        onDismiss()
-                                                    }
+                                                    showSizeSelectionForEntry = entry
                                                 }
                                             )
                                         }
@@ -317,6 +288,115 @@ fun WidgetPickerSheet(
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showSizeSelectionForEntry != null) {
+        val entry = showSizeSelectionForEntry!!
+        Dialog(
+            onDismissRequest = { showSizeSelectionForEntry = null },
+            properties = DialogProperties(usePlatformDefaultWidth = true)
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color(0xFF1E1E1E))
+                    .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(24.dp))
+                    .padding(24.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Select Widget Height",
+                        style = TextStyle(
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = entry.widgetLabel,
+                        style = TextStyle(
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 13.sp
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    val sizes = listOf(
+                        Triple(1, "Small", "120 dp height"),
+                        Triple(2, "Medium", "180 dp height"),
+                        Triple(3, "Large", "260 dp height")
+                    )
+
+                    sizes.forEach { (spanY, title, desc) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.White.copy(alpha = 0.06f))
+                                .clickable {
+                                    val appWidgetId = appWidgetHost.allocateAppWidgetId()
+                                    val provider = entry.info.provider
+                                    val bound = appWidgetManager.bindAppWidgetIdIfAllowed(appWidgetId, provider)
+                                    if (bound) {
+                                        onWidgetSelected(appWidgetId, provider, 5, spanY)
+                                    } else {
+                                        viewModel.pendingWidgetToAdd = LauncherViewModel.PendingWidget(
+                                            appWidgetId = appWidgetId,
+                                            provider = provider,
+                                            spanX = 5,
+                                            spanY = spanY
+                                        )
+                                        val intent = Intent(AppWidgetManager.ACTION_APPWIDGET_BIND).apply {
+                                            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                                            putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER, provider)
+                                        }
+                                        try {
+                                            (context as? Activity)?.startActivityForResult(intent, 1002)
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
+                                        onDismiss()
+                                    }
+                                    showSizeSelectionForEntry = null
+                                }
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = title,
+                                    color = Color.White,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = desc,
+                                    color = Color.White.copy(alpha = 0.4f),
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    TextButton(
+                        onClick = { showSizeSelectionForEntry = null },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("Cancel", color = Color(0xFF5B9EFF))
                     }
                 }
             }

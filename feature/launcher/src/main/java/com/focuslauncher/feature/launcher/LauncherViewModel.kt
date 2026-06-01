@@ -221,14 +221,15 @@ class LauncherViewModel(
         viewModelScope.launch {
             val activeId = activeProfileId.value
             if (activeId == -1L || activeId == -99L) return@launch
+            val nextCellY = widgetItems.value.size
             val widget = WidgetItem(
                 profileId = activeId,
                 appWidgetId = appWidgetId,
                 providerPackage = provider.packageName,
                 providerClass = provider.className,
-                cellX = cellX,
-                cellY = cellY,
-                spanX = spanX,
+                cellX = 0,
+                cellY = nextCellY,
+                spanX = 5,
                 spanY = spanY
             )
             widgetRepository.addWidget(widget)
@@ -243,12 +244,43 @@ class LauncherViewModel(
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+            // Re-index remaining widgets to prevent gaps in cellY (vertical sorting index)
+            val remainingWidgets = widgetItems.value.filter { it.id != widgetId }.sortedBy { it.cellY }
+            remainingWidgets.forEachIndexed { index, widget ->
+                if (widget.cellY != index) {
+                    widgetRepository.updateWidgetPosition(widget.id, 0, index)
+                }
+            }
         }
     }
 
     fun moveWidget(widgetId: Long, cellX: Int, cellY: Int) {
         viewModelScope.launch {
             widgetRepository.updateWidgetPosition(widgetId, cellX, cellY)
+        }
+    }
+
+    fun moveWidgetUp(widgetItem: WidgetItem) {
+        viewModelScope.launch {
+            val currentWidgets = widgetItems.value.sortedBy { it.cellY }
+            val index = currentWidgets.indexOfFirst { it.id == widgetItem.id }
+            if (index > 0) {
+                val aboveWidget = currentWidgets[index - 1]
+                widgetRepository.updateWidgetPosition(widgetItem.id, 0, aboveWidget.cellY)
+                widgetRepository.updateWidgetPosition(aboveWidget.id, 0, widgetItem.cellY)
+            }
+        }
+    }
+
+    fun moveWidgetDown(widgetItem: WidgetItem) {
+        viewModelScope.launch {
+            val currentWidgets = widgetItems.value.sortedBy { it.cellY }
+            val index = currentWidgets.indexOfFirst { it.id == widgetItem.id }
+            if (index >= 0 && index < currentWidgets.size - 1) {
+                val belowWidget = currentWidgets[index + 1]
+                widgetRepository.updateWidgetPosition(widgetItem.id, 0, belowWidget.cellY)
+                widgetRepository.updateWidgetPosition(belowWidget.id, 0, widgetItem.cellY)
+            }
         }
     }
 
