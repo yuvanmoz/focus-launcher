@@ -3,13 +3,17 @@ package com.focuslauncher.feature.launcher
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.ComponentName
+import android.appwidget.AppWidgetHost
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.focuslauncher.core.data.repository.AppRepository
 import com.focuslauncher.core.data.repository.ProfileRepository
+import com.focuslauncher.core.data.repository.WidgetRepository
 import com.focuslauncher.core.model.AppMetadata
 import com.focuslauncher.core.model.FocusProfile
 import com.focuslauncher.core.model.HomeScreenItem
+import com.focuslauncher.core.model.WidgetItem
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,7 +33,8 @@ data class HomeScreenApp(
 class LauncherViewModel(
     private val context: Context,
     private val appRepository: AppRepository,
-    private val profileRepository: ProfileRepository
+    private val profileRepository: ProfileRepository,
+    private val widgetRepository: WidgetRepository
 ) : ViewModel() {
 
     // Drawer search query
@@ -54,6 +59,16 @@ class LauncherViewModel(
     val activeProfile: StateFlow<FocusProfile?> = activeProfileId.flatMapLatest { id ->
         if (id == -1L || id == -99L) flowOf(null) else profileRepository.getProfileByIdFlow(id)
     }.stateIn(viewModelScope, SharingStarted.Lazily, null)
+
+    // Allowed package names flow for widget picker filtering
+    val allowedPackageNames: StateFlow<Set<String>> = activeProfileId.flatMapLatest { id ->
+        if (id == -1L || id == -99L) flowOf(emptySet()) else profileRepository.getAllowedPackageNamesFlow(id)
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptySet())
+
+    // Widgets bound to the active profile
+    val widgetItems: StateFlow<List<WidgetItem>> = activeProfileId.flatMapLatest { id ->
+        if (id == -1L || id == -99L) flowOf(emptyList()) else widgetRepository.getWidgetsForProfileFlow(id)
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     // All installed apps on the device
     val installedApps: StateFlow<List<AppMetadata>> = appRepository.installedAppsFlow
@@ -201,6 +216,41 @@ class LauncherViewModel(
     }
 
     fun getAppIcon(app: AppMetadata) = appRepository.getAppIcon(app.packageName)
+
+    fun addWidget(appWidgetId: Int, provider: ComponentName, cellX: Int, cellY: Int, spanX: Int, spanY: Int) {
+        viewModelScope.launch {
+            val activeId = activeProfileId.value
+            if (activeId == -1L || activeId == -99L) return@launch
+            val widget = WidgetItem(
+                profileId = activeId,
+                appWidgetId = appWidgetId,
+                providerPackage = provider.packageName,
+                providerClass = provider.className,
+                cellX = cellX,
+                cellY = cellY,
+                spanX = spanX,
+                spanY = spanY
+            )
+            widgetRepository.addWidget(widget)
+        }
+    }
+
+    fun removeWidget(widgetId: Long, appWidgetId: Int, appWidgetHost: AppWidgetHost) {
+        viewModelScope.launch {
+            widgetRepository.removeWidget(widgetId)
+            try {
+                appWidgetHost.deleteAppWidgetId(appWidgetId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun moveWidget(widgetId: Long, cellX: Int, cellY: Int) {
+        viewModelScope.launch {
+            widgetRepository.updateWidgetPosition(widgetId, cellX, cellY)
+        }
+    }
 
     fun dismissBlockPopup() {
         profileRepository.setBlockedApp(null)

@@ -60,6 +60,8 @@ interface ProfileRepository {
     val dockAppsOrderFlow: Flow<List<String>>
     fun getDockAppsOrder(): List<String>
     suspend fun setDockAppsOrder(order: List<String>)
+
+    fun getAllowedPackageNamesFlow(profileId: Long): Flow<Set<String>>
 }
 
 class ProfileRepositoryImpl(
@@ -276,6 +278,12 @@ class ProfileRepositoryImpl(
         } catch (e: Exception) {
             e.printStackTrace()
             // Ignore system wallpaper errors if permissions are missing
+        }
+    }
+
+    override fun getAllowedPackageNamesFlow(profileId: Long): Flow<Set<String>> {
+        return profileDao.getAllowedAppsFlow(profileId).map { apps ->
+            apps.map { it.packageName }.toSet()
         }
     }
 }

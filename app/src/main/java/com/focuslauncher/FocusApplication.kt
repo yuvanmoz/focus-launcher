@@ -11,6 +11,8 @@ import com.focuslauncher.core.data.repository.AppRepository
 import com.focuslauncher.core.data.repository.AppRepositoryImpl
 import com.focuslauncher.core.data.repository.ProfileRepository
 import com.focuslauncher.core.data.repository.ProfileRepositoryImpl
+import com.focuslauncher.core.data.repository.WidgetRepository
+import com.focuslauncher.core.data.repository.WidgetRepositoryImpl
 import com.focuslauncher.core.database.FocusDatabase
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
@@ -32,6 +34,10 @@ class FocusApplication : Application() {
             profileDao = database.profileDao(),
             homeScreenDao = database.homeScreenDao()
         )
+    }
+
+    val widgetRepository: WidgetRepository by lazy {
+        WidgetRepositoryImpl(database.widgetDao())
     }
 
     override fun onCreate() {

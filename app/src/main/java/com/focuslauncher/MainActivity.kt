@@ -43,7 +43,15 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+import android.appwidget.AppWidgetHost
+
 class MainActivity : ComponentActivity() {
+
+    private lateinit var appWidgetHost: AppWidgetHost
+
+    companion object {
+        private const val APPWIDGET_HOST_ID = 1024
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -56,16 +64,20 @@ class MainActivity : ComponentActivity() {
         
         // Show system wallpaper behind activity window
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SHOW_WALLPAPER)
+
+        // Initialize AppWidgetHost
+        appWidgetHost = AppWidgetHost(applicationContext, APPWIDGET_HOST_ID)
         
         // Retrieve singletons from Application class
         val app = application as FocusApplication
         val appRepo = app.appRepository
         val profileRepo = app.profileRepository
+        val widgetRepo = app.widgetRepository
 
         // Custom factories for ViewModel injection
         val launcherViewModelFactory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return LauncherViewModel(applicationContext, appRepo, profileRepo) as T
+                return LauncherViewModel(applicationContext, appRepo, profileRepo, widgetRepo) as T
             }
         }
 
@@ -164,6 +176,7 @@ class MainActivity : ComponentActivity() {
                         ) {
                             HomeScreen(
                                 viewModel = launcherViewModel,
+                                appWidgetHost = appWidgetHost,
                                 onNavigateToSettings = {
                                     navController.navigate("settings")
                                 }
@@ -290,5 +303,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        try {
+            appWidgetHost.startListening()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
+    override fun onStop() {
+        super.onStop()
+        try {
+            appWidgetHost.stopListening()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }

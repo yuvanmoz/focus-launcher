@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -94,9 +95,15 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import android.appwidget.AppWidgetHost
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     viewModel: LauncherViewModel,
+    appWidgetHost: AppWidgetHost,
     onNavigateToSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -175,11 +182,26 @@ fun HomeScreen(
             WallpaperBackground(profile = activeProfile, isDimmed = draggingApp != null)
 
             // 2. Absolute drag-and-drop workspace layout + One UI Bottom Dock
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-            ) {
+            val pagerState = rememberPagerState(initialPage = 1) { 2 }
+
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                when (page) {
+                    0 -> {
+                        WidgetPage(
+                            viewModel = viewModel,
+                            appWidgetHost = appWidgetHost,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    1 -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .statusBarsPadding()
+                        ) {
                 val cols = 5
                 val rows = 6
 
@@ -478,6 +500,9 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+    }
+}
 
             // 3. Blocked App Bottom Sheet Overlay
             AnimatedVisibility(

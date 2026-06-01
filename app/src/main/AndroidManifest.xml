@@ -14,6 +14,9 @@
     <!-- Permission to post notifications on Android 13+ (when releasing queue) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Permission to host and bind third-party app widgets -->
+    <uses-permission android:name="android.permission.BIND_APPWIDGET" />
+
     <application
         android:name=".FocusApplication"
         android:allowBackup="true"
